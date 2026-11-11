@@ -106,9 +106,45 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
       return updateChat(state, chat, { toTop: true })
     }
 
-    case 'messageSent':
-    case 'outgoingReceived':
-      // Merging of outgoing copies: task 3.3.
-      return state
+    case 'messageSent': {
+      const chat = state.chats[event.chatId]
+      if (!chat) return state
+      if (chat.messages.some((m) => m.id === event.idMessage)) {
+        // The server echo arrived first: it already represents this message.
+        if (!chat.messages.some((m) => m.id === event.tmpId)) return state
+        const messages = chat.messages.filter((m) => m.id !== event.tmpId)
+        return updateChat(state, { ...chat, messages }, { toTop: false })
+      }
+      return updateMessage(state, event.chatId, event.tmpId, (m) => ({
+        ...m,
+        id: event.idMessage,
+        status: 'sent',
+      }))
+    }
+
+    case 'outgoingReceived': {
+      const chat = state.chats[event.chatId]
+      if (!chat) return state
+      const existing = chat.messages.find((m) => m.id === event.idMessage)
+      if (existing) {
+        // Replace the local copy with the server copy, keeping its position.
+        const sameContent = existing.content.type === 'text' && existing.content.text === event.text
+        if (sameContent && existing.status === 'sent' && existing.direction === 'out') return state
+        return updateMessage(state, event.chatId, event.idMessage, (m) => ({
+          ...m,
+          direction: 'out',
+          content: { type: 'text', text: event.text },
+          status: 'sent',
+        }))
+      }
+      const message: Message = {
+        id: event.idMessage,
+        direction: 'out',
+        content: { type: 'text', text: event.text },
+        timestamp: event.ts,
+        status: 'sent',
+      }
+      return updateChat(state, { ...chat, messages: insertByTimestamp(chat.messages, message) }, { toTop: true })
+    }
   }
 }
