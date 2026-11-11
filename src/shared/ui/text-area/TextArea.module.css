@@ -1,0 +1,17 @@
+.textarea {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  line-height: 20px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.textarea:focus {
+  border-color: var(--color-accent);
+}
