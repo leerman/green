@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSessionStore } from '@/entities/session'
-import { ApiError, type GetStateInstanceResponse, type GreenApi } from '@/shared/api'
+import { ApiError, describeApiError, type GetStateInstanceResponse, type GreenApi } from '@/shared/api'
 import { INCOMING_WEBHOOK_WARNING, SETTINGS_UNAVAILABLE_WARNING, WEBHOOK_URL_WARNING } from '../lib/check-settings'
-import { INVALID_CREDENTIALS_MESSAGE, login, NETWORK_ERROR_MESSAGE } from './login'
+import { INVALID_CREDENTIALS_MESSAGE, login } from './login'
 
 function mockApi(overrides: Partial<GreenApi> = {}): GreenApi {
   return {
@@ -51,7 +51,8 @@ describe('login', () => {
   it('reports a network error', async () => {
     const api = mockApi({ getStateInstance: vi.fn(async () => Promise.reject(new ApiError('network'))) })
     await login(creds, { createApi: () => api })
-    expect(session()).toMatchObject({ status: 'idle', error: NETWORK_ERROR_MESSAGE })
+    expect(session()).toMatchObject({ status: 'idle', error: describeApiError(new ApiError('network')) })
+    expect(session().error).toMatch(/Cannot connect to GREEN-API/)
   })
 
   it('adds settings warnings without blocking login', async () => {

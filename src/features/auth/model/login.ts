@@ -3,7 +3,6 @@ import { createApi as defaultCreateApi, describeApiError, type Credentials, type
 import { checkSettings, SETTINGS_UNAVAILABLE_WARNING } from '../lib/check-settings'
 
 export const INVALID_CREDENTIALS_MESSAGE = 'Invalid idInstance or apiTokenInstance'
-export const NETWORK_ERROR_MESSAGE = 'Cannot connect to GREEN-API. Check your internet connection and try again.'
 
 export function notAuthorizedMessage(state: string): string {
   return `The instance is not authorized in MAX (state: ${state}). Authorize it in the GREEN-API console and try again.`
@@ -12,8 +11,6 @@ export function notAuthorizedMessage(state: string): string {
 function loginErrorMessage(error: unknown): string {
   return describeApiError(error, {
     auth: INVALID_CREDENTIALS_MESSAGE,
-    network: NETWORK_ERROR_MESSAGE,
-    canceled: NETWORK_ERROR_MESSAGE,
     validation: (e) =>
       `GREEN-API rejected the request${e.status ? ` (HTTP ${e.status})` : ''}. Check idInstance and apiTokenInstance.`,
   })
