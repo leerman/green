@@ -1,5 +1,6 @@
 import { useChatsStore } from '@/entities/chat'
 import { useSessionStore } from '@/entities/session'
+import { describeApiError } from '@/shared/api'
 
 export const MAX_MESSAGE_LENGTH = 4000
 
@@ -31,7 +32,7 @@ async function deliver(chatId: string, tmpId: string, text: string): Promise<Sen
   } catch (error) {
     if (useSessionStore.getState().api !== api) return { ok: false, error: 'Session ended', queued: true }
     useChatsStore.getState().apply({ type: 'messageFailed', chatId, tmpId })
-    return { ok: false, error: error instanceof Error ? error.message : 'Send failed', queued: true }
+    return { ok: false, error: describeApiError(error), queued: true }
   }
 }
 

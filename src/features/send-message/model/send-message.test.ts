@@ -53,7 +53,7 @@ describe('send-message', () => {
   it('marks the message failed on error', async () => {
     login(async () => Promise.reject(new ApiError('network')))
     const result = await sendMessage('42', 'hello', deps)
-    expect(result).toMatchObject({ ok: false, queued: true })
+    expect(result).toMatchObject({ ok: false, queued: true, error: expect.stringMatching(/Cannot connect to GREEN-API/) })
     expect(messages()).toHaveLength(1)
     expect(messages()[0]).toMatchObject({ id: 'tmp-abc', status: 'failed' })
   })
