@@ -87,6 +87,7 @@ Slice notes:
 Supporting tools:
 - The `@/` alias points to `src/` in `tsconfig` and `vite.config`.
 - **Steiger**, the official FSD linter, checks layer boundaries, public APIs, and cross-imports. It runs as `npm run lint:fsd` and is part of the verification for every task group.
+- Steiger uses `fsd.configs.recommended` with one exception: `fsd/insignificant-slice` is turned off in `steiger.config.ts`. That rule asks to merge any slice that has only one consumer. In this layout, single-consumer slices are intentional: each widget belongs to one page (`sidebar` and `chat-window` → `messenger`), and each feature belongs to one widget or page (`auth` → `login`, `create-chat` and `logout` → `sidebar`, `send-message` → `chat-window`). Merging them would erase the feature and widget boundaries this design relies on. The rules this design depends on (layer boundaries, public APIs, cross-imports) stay on. Revisit if the slice layout changes.
 
 Alternative: plain layers (`api/domain/store/components`). They were rejected at the user's request. FSD makes boundaries explicit and checks them with a linter, at the cost of more folders.
 
