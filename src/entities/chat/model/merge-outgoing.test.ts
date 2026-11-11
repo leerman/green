@@ -93,6 +93,15 @@ describe('merging outgoing copies', () => {
     ])
   })
 
+  it('never rewrites an incoming message that shares the idMessage', () => {
+    const s1 = run([...base, { type: 'incomingReceived', chatId: '1', idMessage: 'SAME', text: 'from Alice', ts: 5, title: 'Alice' }])
+    const s2 = applyEvent(s1, { type: 'outgoingReceived', chatId: '1', idMessage: 'SAME', text: 'mine', ts: 6 })
+    expect(s2).toBe(s1)
+    expect(messages(s2)).toEqual([
+      { id: 'SAME', direction: 'in', content: { type: 'text', text: 'from Alice' }, timestamp: 5 },
+    ])
+  })
+
   it('ignores an outgoing notification for an unknown chat', () => {
     const s1 = run(base)
     const s2 = applyEvent(s1, { type: 'outgoingReceived', chatId: '999', idMessage: 'X', text: 'x', ts: 1 })

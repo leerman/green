@@ -126,9 +126,10 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
       const chat = state.chats[event.chatId]
       if (!chat) return state
       const existing = chat.messages.find((m) => m.id === event.idMessage)
+      // An incoming message with the same id is not ours to replace.
+      if (existing?.direction === 'in') return state
       if (existing) {
         const unchanged =
-          existing.direction === 'out' &&
           existing.status === 'sent' &&
           existing.timestamp === event.ts &&
           existing.content.type === 'text' &&
@@ -138,7 +139,6 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
         // fixes the order when the client clock differs from the server's.
         const serverCopy: Message = {
           ...existing,
-          direction: 'out',
           content: { type: 'text', text: event.text },
           timestamp: event.ts,
           status: 'sent',
