@@ -5,6 +5,9 @@ import { normalizePhone } from '@/shared/lib/phone'
 /** Notifications up to this many seconds older than login are still shown. */
 export const LOGIN_CLOCK_SKEW_S = 30
 
+/** Plain text and text with a link preview are both shown as text. */
+const TEXT_MESSAGE_TYPES = new Set(['textMessage', 'extendedTextMessage'])
+
 const MESSAGE_WEBHOOKS = new Set(['incomingMessageReceived', 'outgoingAPIMessageReceived', 'outgoingMessageReceived'])
 
 function nonEmptyString(value: unknown): string | undefined {
@@ -46,7 +49,8 @@ export function mapNotification(body: unknown, loginAt: number): ChatEvent | nul
   const ts = b.timestamp * 1000
 
   if (typeof b.typeWebhook !== 'string' || !MESSAGE_WEBHOOKS.has(b.typeWebhook)) return null
-  if (b.messageData?.typeMessage !== 'textMessage') return null
+  const typeMessage = b.messageData?.typeMessage
+  if (typeMessage === undefined || !TEXT_MESSAGE_TYPES.has(typeMessage)) return null
 
   const text = readText(b.messageData)
   if (text === undefined) return null

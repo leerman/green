@@ -78,6 +78,14 @@ describe('mapNotification', () => {
     })
   })
 
+  it.each(['outgoingMessageReceived', 'incomingMessageReceived'])('accepts extendedTextMessage in %s', (type) => {
+    const body =
+      type === 'incomingMessageReceived'
+        ? incoming({ messageData: { typeMessage: 'extendedTextMessage', extendedTextMessageData: { text: 'see https://x.y' } } })
+        : outgoing(type, { typeMessage: 'extendedTextMessage', extendedTextMessageData: { text: 'see https://x.y' } })
+    expect(mapNotification(body, LOGIN_AT)).toMatchObject({ text: 'see https://x.y' })
+  })
+
   it('reads the text from extendedTextMessageData as a fallback', () => {
     const ev = mapNotification(
       outgoing('outgoingMessageReceived', { typeMessage: 'textMessage', extendedTextMessageData: { text: 'ext' } }),
