@@ -1,4 +1,4 @@
-import { useChatsStore } from '@/entities/chat'
+import { formatPhone, useChatsStore } from '@/entities/chat'
 import { useSessionStore } from '@/entities/session'
 import { describeApiError, type CheckAccountResponse } from '@/shared/api'
 import { normalizePhone, PHONE_MAX_DIGITS, PHONE_MIN_DIGITS } from '@/shared/lib/phone'
@@ -49,7 +49,7 @@ export async function createChat(input: string): Promise<CreateChatResult> {
   const chatId = String(response.chatId)
   const store = useChatsStore.getState()
   // For an existing chatId, chatCreated only fills in the missing phone.
-  store.apply({ type: 'chatCreated', chatId, title: `+${phone}`, phone })
+  store.apply({ type: 'chatCreated', chatId, title: formatPhone(phone), phone })
   store.openChat(chatId)
   return { ok: true, chatId }
 }
