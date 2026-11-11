@@ -37,7 +37,7 @@
 
 - [x] 5.1 Implement `app/model/session-lifecycle.ts`: subscribe to `useSessionStore`, `ready` → `poller.start(api, loginAt)`, leaving `ready` → `poller.stop()` + `useChatsStore.reset()`; verify with a test: login starts the poller, logout stops it and clears chats, and a second login starts a new loop
 - [x] 5.2 Implement `widgets/sidebar` (chat list sorted by `order`, empty state with a prompt, `CreateChatForm`, `LogoutButton`, `SessionWarnings`, `ConnectionStatus`); verify visually and with `npm run lint:fsd`
-- [ ] 5.3 Implement `widgets/chat-window` (`ChatHeader`, `MessageList` with `MessageBubble` and `RetryButton` in the slot, auto-scroll to the newest message, `MessageInput`, placeholder when no chat is selected); verify visually and with `npm run lint:fsd`
+- [x] 5.3 Implement `widgets/chat-window` (`ChatHeader`, `MessageList` with `MessageBubble` and `RetryButton` in the slot, auto-scroll to the newest message, `MessageInput`, placeholder when no chat is selected); verify visually and with `npm run lint:fsd`
 - [ ] 5.4 Implement `pages/login` and `pages/messenger` (layout in the style of web.max.ru), plus the page switch and lifecycle connection in `app/App.tsx`; verify manually: invalid and valid login, logout returns to the login screen with no chats
 
 ## 6. Documentation and integration check
