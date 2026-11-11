@@ -86,19 +86,20 @@ export function createPoller(deps: PollerDeps): Poller {
     }
   }
 
-  return {
-    start(api, loginAt) {
-      this.stop()
-      const id = ++runId
-      controller = new AbortController()
-      void loop(id, api, loginAt, controller.signal)
-    },
-    stop() {
-      runId++
-      controller?.abort()
-      controller = null
-    },
+  function stop() {
+    runId++
+    controller?.abort()
+    controller = null
   }
+
+  function start(api: GreenApi, loginAt: number) {
+    stop()
+    const id = ++runId
+    controller = new AbortController()
+    void loop(id, api, loginAt, controller.signal)
+  }
+
+  return { start, stop }
 }
 
 /** App-wide poller wired to the stores. Started and stopped by app/session-lifecycle. */

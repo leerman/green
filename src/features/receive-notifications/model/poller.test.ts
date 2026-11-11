@@ -229,6 +229,19 @@ describe('poller', () => {
     expect(onAuthError).not.toHaveBeenCalled()
   })
 
+  it('works when start and stop are called detached from the poller', async () => {
+    const { poller } = setup()
+    const { start, stop } = poller
+    const { api } = fakeApi([])
+    start(api, LOGIN_AT)
+    start(api, LOGIN_AT)
+    await flush()
+    const signals = api.receiveNotification.mock.calls.map((c) => c[0].signal!)
+    expect(signals.filter((s) => !s.aborted)).toHaveLength(1)
+    stop()
+    expect(signals.every((s) => s.aborted)).toBe(true)
+  })
+
   it('keeps only one pending request', async () => {
     const { poller } = setup()
     const { api } = fakeApi([])
