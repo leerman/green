@@ -8,7 +8,7 @@ export function initials(title: string): string {
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((w) => [...w][0] ?? '')
+    .map((w) => [...w].find((ch) => /[\p{L}\p{N}]/u.test(ch)) ?? '')
     .join('')
   return letters.toUpperCase() || '?'
 }
