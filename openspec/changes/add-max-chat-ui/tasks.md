@@ -42,7 +42,7 @@
 
 ## 6. Documentation and integration check
 
-- [ ] 6.1 Write `README.md`: what the app does, instance requirements (empty `webhookUrl`, `incomingWebhook` enabled), `.env` setup, `npm` commands, an FSD structure overview, limitations (text only, one tab per instance, the token is visible in Network); verify that following the README you can start the project from scratch
+- [x] 6.1 Write `README.md`: what the app does, instance requirements (empty `webhookUrl`, `incomingWebhook` enabled), `.env` setup, `npm` commands, an FSD structure overview, limitations (text only, one tab per instance, the token is visible in Network); verify that following the README you can start the project from scratch
 - [ ] 6.2 Run an end-to-end check on a real instance: log in → create a chat by number → send a message → receive the recipient's reply in the same chat → reply from an unknown number creates a chat → message from the phone appears as outgoing → logout clears state; also verify that `npm test`, `npm run typecheck`, `npm run lint:fsd`, and `npm run build` pass and that the console contains no token
 
 ## Workflow follow-up
