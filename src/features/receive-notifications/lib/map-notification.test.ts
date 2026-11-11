@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapNotification } from './map-notification'
+import { LOGIN_CLOCK_SKEW_S, mapNotification } from './map-notification'
 
 const LOGIN_AT = 1_700_000_000_000
 const TS = LOGIN_AT / 1000 + 5
@@ -92,13 +92,21 @@ describe('mapNotification', () => {
     expect(mapNotification(incoming({ senderData: { chatId: '-100200300', senderName: 'G' } }), LOGIN_AT)).toBeNull()
   })
 
-  it('ignores notifications from before login', () => {
-    expect(mapNotification(incoming({ timestamp: LOGIN_AT / 1000 - 1 }), LOGIN_AT)).toBeNull()
-    expect(mapNotification(outgoing('outgoingMessageReceived'), LOGIN_AT + 10_000)).toBeNull()
+  it('ignores notifications from before login, beyond the clock-skew margin', () => {
+    const loginSec = LOGIN_AT / 1000
+    expect(mapNotification(incoming({ timestamp: loginSec - LOGIN_CLOCK_SKEW_S - 1 }), LOGIN_AT)).toBeNull()
+    expect(mapNotification(outgoing('outgoingMessageReceived'), (TS + LOGIN_CLOCK_SKEW_S + 1) * 1000)).toBeNull()
+    expect(mapNotification(incoming({ timestamp: loginSec - 3600 }), LOGIN_AT)).toBeNull()
   })
 
-  it('accepts a notification at exactly the login second', () => {
-    expect(mapNotification(incoming({ timestamp: LOGIN_AT / 1000 }), LOGIN_AT)).not.toBeNull()
+  it('accepts a message from the login second even though the timestamp is truncated', () => {
+    // loginAt = 12:00:00.700, message at server 12:00:00.900 -> timestamp 12:00:00
+    expect(mapNotification(incoming({ timestamp: LOGIN_AT / 1000 }), LOGIN_AT + 700)).not.toBeNull()
+  })
+
+  it('accepts a post-login message when the client clock runs ahead of the server', () => {
+    const clientAheadBy = 10
+    expect(mapNotification(incoming({ timestamp: LOGIN_AT / 1000 - clientAheadBy + 2 }), LOGIN_AT)).not.toBeNull()
   })
 
   it.each([

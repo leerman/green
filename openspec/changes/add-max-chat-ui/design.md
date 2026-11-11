@@ -145,7 +145,7 @@ Any event with a message moves its chat to the top of `order`.
 ### D4. Mapping notifications: `mapNotification(body, loginAt) => ChatEvent | null`
 
 A pure function in `features/receive-notifications/lib/map-notification.ts`. It returns `null` (ignore) when any of these is true:
-- `body.timestamp * 1000 < loginAt`
+- `body.timestamp < floor(loginAt / 1000) - 30`: the timestamp is whole seconds on the server clock and `loginAt` is ms on the client clock, so the comparison is in seconds with a 30 s allowance for clock skew. A message dropped here is also deleted from the queue, so the filter errs toward showing a message from just before login rather than losing one from just after.
 - `typeWebhook` is not one of `incomingMessageReceived`, `outgoingAPIMessageReceived`, or `outgoingMessageReceived`
 - `messageData.typeMessage !== "textMessage"` or the text is missing
 - `senderData.chatId` is missing or starts with `-` (group)

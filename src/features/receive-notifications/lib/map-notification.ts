@@ -1,6 +1,9 @@
 import type { ChatEvent } from '@/entities/chat'
 import type { NotificationBody } from '@/shared/api'
 
+/** Notifications up to this many seconds older than login are still shown. */
+export const LOGIN_CLOCK_SKEW_S = 30
+
 const MESSAGE_WEBHOOKS = new Set(['incomingMessageReceived', 'outgoingAPIMessageReceived', 'outgoingMessageReceived'])
 
 function nonEmptyString(value: unknown): string | undefined {
@@ -34,8 +37,11 @@ export function mapNotification(body: unknown, loginAt: number): ChatEvent | nul
   const b = body as NotificationBody
 
   if (typeof b.timestamp !== 'number' || !Number.isFinite(b.timestamp)) return null
+  // Server timestamps are whole seconds on the server clock, loginAt is ms on the
+  // client clock: compare in seconds and allow for clock skew so a fresh message
+  // is never treated as old (it would be deleted from the queue and lost).
+  if (b.timestamp < Math.floor(loginAt / 1000) - LOGIN_CLOCK_SKEW_S) return null
   const ts = b.timestamp * 1000
-  if (ts < loginAt) return null
 
   if (typeof b.typeWebhook !== 'string' || !MESSAGE_WEBHOOKS.has(b.typeWebhook)) return null
   if (b.messageData?.typeMessage !== 'textMessage') return null
