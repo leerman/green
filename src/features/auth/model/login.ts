@@ -1,5 +1,5 @@
 import { useSessionStore } from '@/entities/session'
-import { createApi as defaultCreateApi, isApiError, type Credentials, type GreenApi } from '@/shared/api'
+import { createApi as defaultCreateApi, describeApiError, type Credentials, type GreenApi } from '@/shared/api'
 import { checkSettings, SETTINGS_UNAVAILABLE_WARNING } from '../lib/check-settings'
 
 export const INVALID_CREDENTIALS_MESSAGE = 'Invalid idInstance or apiTokenInstance'
@@ -10,20 +10,13 @@ export function notAuthorizedMessage(state: string): string {
 }
 
 function loginErrorMessage(error: unknown): string {
-  if (!isApiError(error)) return 'Unexpected error. Try again.'
-  switch (error.kind) {
-    case 'auth':
-      return INVALID_CREDENTIALS_MESSAGE
-    case 'network':
-    case 'canceled':
-      return NETWORK_ERROR_MESSAGE
-    case 'limit':
-      return 'Too many requests to GREEN-API. Try again later.'
-    case 'server':
-      return 'GREEN-API server error. Try again later.'
-    case 'validation':
-      return `GREEN-API rejected the request${error.status ? ` (HTTP ${error.status})` : ''}. Check idInstance and apiTokenInstance.`
-  }
+  return describeApiError(error, {
+    auth: INVALID_CREDENTIALS_MESSAGE,
+    network: NETWORK_ERROR_MESSAGE,
+    canceled: NETWORK_ERROR_MESSAGE,
+    validation: (e) =>
+      `GREEN-API rejected the request${e.status ? ` (HTTP ${e.status})` : ''}. Check idInstance and apiTokenInstance.`,
+  })
 }
 
 export interface LoginDeps {

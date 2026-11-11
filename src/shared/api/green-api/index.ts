@@ -1,5 +1,5 @@
 export { createApi } from './client'
-export { ApiError, isApiError } from './errors'
-export type { ApiErrorKind } from './errors'
+export { ApiError, describeApiError, isApiError } from './errors'
+export type { ApiErrorKind, ApiErrorMessages } from './errors'
 export type { GreenApi, CreateApiOptions } from './client'
 export type * from './types'

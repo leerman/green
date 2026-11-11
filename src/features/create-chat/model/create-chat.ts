@@ -1,6 +1,6 @@
 import { useChatsStore } from '@/entities/chat'
 import { useSessionStore } from '@/entities/session'
-import { isApiError, type CheckAccountResponse } from '@/shared/api'
+import { describeApiError, type CheckAccountResponse } from '@/shared/api'
 import { normalizePhone, PHONE_MAX_DIGITS, PHONE_MIN_DIGITS } from '@/shared/lib/phone'
 
 export const INVALID_PHONE_MESSAGE = `Invalid number. Enter ${PHONE_MIN_DIGITS}–${PHONE_MAX_DIGITS} digits in international format, with the country code.`
@@ -11,20 +11,7 @@ export const LIMIT_MESSAGE = 'The MAX number check limit has been reached. Try a
 export type CreateChatResult = { ok: true; chatId: string } | { ok: false; error: string }
 
 function checkErrorMessage(error: unknown): string {
-  if (!isApiError(error)) return 'Unexpected error. Try again.'
-  switch (error.kind) {
-    case 'validation':
-      return CANNOT_CHECK_MESSAGE
-    case 'limit':
-      return LIMIT_MESSAGE
-    case 'network':
-    case 'canceled':
-      return 'Cannot connect to GREEN-API. Check your connection and try again.'
-    case 'auth':
-      return 'GREEN-API rejected the instance credentials. Log in again.'
-    case 'server':
-      return 'GREEN-API server error. Try again later.'
-  }
+  return describeApiError(error, { validation: CANNOT_CHECK_MESSAGE, limit: LIMIT_MESSAGE })
 }
 
 export async function createChat(input: string): Promise<CreateChatResult> {

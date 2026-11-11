@@ -53,3 +53,21 @@ export function toApiError(error: unknown): ApiError {
 export function installErrorInterceptor(http: AxiosInstance): void {
   http.interceptors.response.use(undefined, (error: unknown) => Promise.reject(toApiError(error)))
 }
+
+export type ApiErrorMessages = Partial<Record<ApiErrorKind, string | ((error: ApiError) => string)>>
+
+const USER_MESSAGES: Record<ApiErrorKind, (error: ApiError) => string> = {
+  auth: () => 'GREEN-API rejected the instance credentials. Log in again.',
+  limit: () => 'Too many requests to GREEN-API. Try again later.',
+  network: () => 'Cannot connect to GREEN-API. Check your internet connection and try again.',
+  canceled: () => 'Cannot connect to GREEN-API. Check your internet connection and try again.',
+  server: () => 'GREEN-API server error. Try again later.',
+  validation: (e) => `GREEN-API rejected the request${e.status ? ` (HTTP ${e.status})` : ''}.`,
+}
+
+/** User-facing text for an API error; callers override the kinds they can explain better. */
+export function describeApiError(error: unknown, overrides: ApiErrorMessages = {}): string {
+  if (!isApiError(error)) return 'Unexpected error. Try again.'
+  const message = overrides[error.kind] ?? USER_MESSAGES[error.kind]
+  return typeof message === 'function' ? message(error) : message
+}

@@ -1,7 +1,7 @@
 import { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios'
 import { describe, expect, it } from 'vitest'
 import { createApi } from './client'
-import { ApiError, type ApiErrorKind } from './errors'
+import { ApiError, describeApiError, type ApiErrorKind } from './errors'
 
 const TOKEN = 'secret-token-abc123'
 const ID = '1100000001'
@@ -107,5 +107,19 @@ describe('createApi', () => {
     await expect(api(adapter).deleteNotification(42)).resolves.toEqual({ result: true })
     expect(seen[0].method).toBe('delete')
     expect(seen[0].url).toBe(`/waInstance${ID}/deleteNotification/${TOKEN}/42`)
+  })
+})
+
+describe('describeApiError', () => {
+  it('gives a default message per kind', () => {
+    expect(describeApiError(new ApiError('network'))).toMatch(/Cannot connect/)
+    expect(describeApiError(new ApiError('validation', 400))).toBe('GREEN-API rejected the request (HTTP 400).')
+    expect(describeApiError(new Error('x'))).toBe('Unexpected error. Try again.')
+  })
+
+  it('applies overrides by kind', () => {
+    expect(describeApiError(new ApiError('limit', 469), { limit: 'later' })).toBe('later')
+    expect(describeApiError(new ApiError('validation', 404), { validation: (e) => `bad ${e.status}` })).toBe('bad 404')
+    expect(describeApiError(new ApiError('server', 500), { limit: 'later' })).toMatch(/server error/)
   })
 })
