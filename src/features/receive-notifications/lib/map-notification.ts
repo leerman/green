@@ -1,0 +1,61 @@
+import type { ChatEvent } from '@/entities/chat'
+import type { NotificationBody } from '@/shared/api'
+
+const MESSAGE_WEBHOOKS = new Set(['incomingMessageReceived', 'outgoingAPIMessageReceived', 'outgoingMessageReceived'])
+
+function nonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value !== '' ? value : undefined
+}
+
+/**
+ * Text field of a text message. Which field outgoing MAX notifications use is not
+ * confirmed yet (task 4.5), so both known fields are read.
+ */
+function readText(messageData: NotificationBody['messageData']): string | undefined {
+  return (
+    nonEmptyString(messageData?.textMessageData?.textMessage) ??
+    nonEmptyString(messageData?.extendedTextMessageData?.text)
+  )
+}
+
+function readPhone(value: unknown): string | undefined {
+  if (typeof value !== 'string' && typeof value !== 'number') return undefined
+  const digits = String(value).replace(/\D/g, '')
+  return digits || undefined
+}
+
+/**
+ * Converts a GREEN-API notification into a chat event, or `null` to ignore it.
+ * Ignored: notifications from before login, non-message webhooks, non-text messages,
+ * group chats, and anything with missing fields.
+ */
+export function mapNotification(body: unknown, loginAt: number): ChatEvent | null {
+  if (typeof body !== 'object' || body === null) return null
+  const b = body as NotificationBody
+
+  if (typeof b.timestamp !== 'number' || !Number.isFinite(b.timestamp)) return null
+  const ts = b.timestamp * 1000
+  if (ts < loginAt) return null
+
+  if (typeof b.typeWebhook !== 'string' || !MESSAGE_WEBHOOKS.has(b.typeWebhook)) return null
+  if (b.messageData?.typeMessage !== 'textMessage') return null
+
+  const text = readText(b.messageData)
+  if (text === undefined) return null
+
+  const chatId = nonEmptyString(b.senderData?.chatId)
+  if (chatId === undefined || chatId.startsWith('-')) return null
+
+  const idMessage = nonEmptyString(b.idMessage)
+  if (idMessage === undefined) return null
+
+  if (b.typeWebhook === 'incomingMessageReceived') {
+    const s = b.senderData!
+    const title =
+      nonEmptyString(s.senderContactName) ?? nonEmptyString(s.senderName) ?? nonEmptyString(s.chatName) ?? chatId
+    const phone = readPhone(s.senderPhoneNumber)
+    return { type: 'incomingReceived', chatId, idMessage, text, ts, title, ...(phone ? { phone } : {}) }
+  }
+
+  return { type: 'outgoingReceived', chatId, idMessage, text, ts }
+}
