@@ -163,7 +163,8 @@ messageSent {tmpId, idMessage}:
 
 outgoingReceived {idMessage, ...}:
   if chat unknown                                   -> ignore
-  if chat contains id == idMessage                  -> replace with the server copy (status "sent")
+  if chat contains id == idMessage                  -> replace with the server copy (status "sent",
+                                                       server timestamp, re-sorted)
   else                                              -> append as a new outgoing message
 ```
 

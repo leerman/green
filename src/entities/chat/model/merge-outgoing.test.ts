@@ -30,7 +30,7 @@ describe('merging outgoing copies', () => {
   it('notification after the send response: exactly one copy', () => {
     const s = run([...base, queued, sent, echo])
     expect(messages(s)).toEqual([
-      { id: 'ID1', direction: 'out', content: { type: 'text', text: 'hello' }, timestamp: 1000, status: 'sent' },
+      { id: 'ID1', direction: 'out', content: { type: 'text', text: 'hello' }, timestamp: 1001, status: 'sent' },
     ])
   })
 
@@ -51,6 +51,20 @@ describe('merging outgoing copies', () => {
   it('repeated messageSent is harmless', () => {
     const s1 = run([...base, queued, sent])
     expect(applyEvent(s1, sent)).toBe(s1)
+  })
+
+  it('adopts the server timestamp to fix the order when the client clock runs ahead', () => {
+    const s = run([
+      ...base,
+      // Client clock 30 s ahead: the local copy gets ts 31_000.
+      { type: 'messageQueued', chatId: '1', tmpId: 'tmp-a', text: 'question', ts: 31_000 },
+      { type: 'messageSent', chatId: '1', tmpId: 'tmp-a', idMessage: 'ID1' },
+      // Reply at server time 6_000, before the local ts: shown above for now.
+      { type: 'incomingReceived', chatId: '1', idMessage: 'R1', text: 'answer', ts: 6_000, title: 'Alice' },
+      // The echo carries the real server time of the question.
+      { type: 'outgoingReceived', chatId: '1', idMessage: 'ID1', text: 'question', ts: 1_000 },
+    ])
+    expect(messages(s).map((m) => m.id)).toEqual(['ID1', 'R1'])
   })
 
   it('replaces the local copy with the server copy', () => {

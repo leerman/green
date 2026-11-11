@@ -127,15 +127,24 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
       if (!chat) return state
       const existing = chat.messages.find((m) => m.id === event.idMessage)
       if (existing) {
-        // Replace the local copy with the server copy, keeping its position.
-        const sameContent = existing.content.type === 'text' && existing.content.text === event.text
-        if (sameContent && existing.status === 'sent' && existing.direction === 'out') return state
-        return updateMessage(state, event.chatId, event.idMessage, (m) => ({
-          ...m,
+        const unchanged =
+          existing.direction === 'out' &&
+          existing.status === 'sent' &&
+          existing.timestamp === event.ts &&
+          existing.content.type === 'text' &&
+          existing.content.text === event.text
+        if (unchanged) return state
+        // Replace the local copy with the server copy. The server timestamp
+        // fixes the order when the client clock differs from the server's.
+        const serverCopy: Message = {
+          ...existing,
           direction: 'out',
           content: { type: 'text', text: event.text },
+          timestamp: event.ts,
           status: 'sent',
-        }))
+        }
+        const others = chat.messages.filter((m) => m.id !== event.idMessage)
+        return updateChat(state, { ...chat, messages: insertByTimestamp(others, serverCopy) }, { toTop: false })
       }
       const message: Message = {
         id: event.idMessage,
