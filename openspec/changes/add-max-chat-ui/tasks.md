@@ -21,7 +21,7 @@
 - [x] 3.2 Implement `entities/chat/model`: types `Chat`, `ChatsState`, events (design D3), and `applyEvent` for `chatCreated`, `chatOpened`, `messageQueued`, `messageFailed`, and `incomingReceived` (auto-creation, title fallback, `idMessage` idempotency, moving the chat to the top of `order`); verify with tests in `apply-event.test.ts`
 - [x] 3.3 Implement merging of outgoing copies in `applyEvent` (`messageSent`, `outgoingReceived`, design D5): both arrival orders, repeated delivery, retry without a duplicate, ignoring an unknown chat; verify with tests for every scenario in the "No duplicate outgoing messages" requirement
 - [x] 3.4 Implement `useChatsStore` (`apply`, `openChat`, `reset`) and `entities/chat/ui` (`ChatListItem`: title, latest message text, highlight; `ChatHeader`: title and number); verify with a store test (`apply` changes state, `reset` returns the initial state) and `npm run lint:fsd`
-- [ ] 3.5 Implement `entities/session`: `useSessionStore` with the setters from design D2 and `ui/SessionWarnings`; verify with a store test (`setReady`/`clear`) and `npm run lint:fsd`
+- [x] 3.5 Implement `entities/session`: `useSessionStore` with the setters from design D2 and `ui/SessionWarnings`; verify with a store test (`setReady`/`clear`) and `npm run lint:fsd`
 
 ## 4. Features
 
