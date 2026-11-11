@@ -141,6 +141,15 @@ describe('poller', () => {
     expect(api.receiveNotification).toHaveBeenCalledTimes(1)
   })
 
+  it('does not show reconnecting after two failures', async () => {
+    const { poller, connection } = setup()
+    const { api } = fakeApi([new ApiError('network'), new ApiError('network'), null])
+    poller.start(api, LOGIN_AT)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(connection).toEqual(['online'])
+    poller.stop()
+  })
+
   it('grows the delay on failures, shows reconnecting, and resets after success', async () => {
     const { poller, connection } = setup()
     const err = () => new ApiError('network')
@@ -151,7 +160,8 @@ describe('poller', () => {
     const gaps = receiveTimes.slice(1).map((t, i) => t - receiveTimes[i])
     // 5 failures: 1, 2, 5, 10, 10 s; success: immediately; failure after reset: 1 s.
     expect(gaps).toEqual([1000, 2000, 5000, 10000, 10000, 0, 0, 1000, 0])
-    expect(connection).toEqual(['reconnecting', 'reconnecting', 'online', 'online', 'online'])
+    // 'reconnecting' from the 3rd failure in a row on.
+    expect(connection).toEqual(['reconnecting', 'reconnecting', 'reconnecting', 'online', 'online', 'online'])
     poller.stop()
   })
 

@@ -186,7 +186,7 @@ loop until aborted:
     backoff.reset(); session.setConnection("online")
   catch (e):
     if aborted: break
-    if backoff.attempts >= 3: session.setConnection("reconnecting")
+    if backoff.attempts + 1 >= 3: session.setConnection("reconnecting")   // from the 3rd failure in a row
     await sleep(backoff.next(), signal)         // 1, 2, 5, 10, 10, ... s
 ```
 

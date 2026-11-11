@@ -82,7 +82,8 @@ export function createPoller(deps: PollerDeps): Poller {
           deps.onAuthError()
           return
         }
-        if (backoff.attempts >= RECONNECTING_AFTER_FAILURES) deps.setConnection('reconnecting')
+        // `attempts` does not count this failure yet; next() records it below.
+        if (backoff.attempts + 1 >= RECONNECTING_AFTER_FAILURES) deps.setConnection('reconnecting')
         await sleep(backoff.next(), signal)
       }
     }
