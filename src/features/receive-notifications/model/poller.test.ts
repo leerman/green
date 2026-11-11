@@ -52,11 +52,13 @@ function fakeApi(steps: Step[], deleteResults: Array<'ok' | 'fail'> = []) {
 function setup() {
   const events: ChatEvent[] = []
   const connection: ConnectionState[] = []
+  const onAuthError = vi.fn()
   const poller = createPoller({
     dispatch: (e) => events.push(e),
     setConnection: (c) => connection.push(c),
+    onAuthError,
   })
-  return { poller, events, connection }
+  return { poller, events, connection, onAuthError }
 }
 
 const flush = () => vi.advanceTimersByTimeAsync(0)
@@ -190,6 +192,32 @@ describe('poller', () => {
     resolveOld(message(1, 'LATE'))
     await vi.advanceTimersByTimeAsync(10_000)
     expect(events).toEqual([])
+  })
+
+  it.each([401, 403])('ends the session on HTTP %i instead of retrying', async (status) => {
+    const { poller, onAuthError, connection } = setup()
+    const { api } = fakeApi([new ApiError('auth', status)])
+    poller.start(api, LOGIN_AT)
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(onAuthError).toHaveBeenCalledTimes(1)
+    expect(api.receiveNotification).toHaveBeenCalledTimes(1)
+    expect(connection).toEqual([])
+    poller.stop()
+  })
+
+  it('does not report an auth error from a stale loop', async () => {
+    const { poller, onAuthError } = setup()
+    let rejectOld!: (e: unknown) => void
+    const api = {
+      receiveNotification: vi.fn(() => new Promise<Notification>((_, r) => (rejectOld = r))),
+      deleteNotification: vi.fn(),
+    } as unknown as GreenApi
+    poller.start(api, LOGIN_AT)
+    await flush()
+    poller.stop()
+    rejectOld(new ApiError('auth', 401))
+    await flush()
+    expect(onAuthError).not.toHaveBeenCalled()
   })
 
   it('keeps only one pending request', async () => {
