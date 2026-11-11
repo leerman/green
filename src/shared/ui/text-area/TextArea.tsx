@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type Ref, type TextareaHTMLAttributes } from 'react'
+import { useCallback, useLayoutEffect, useRef, type Ref, type TextareaHTMLAttributes } from 'react'
 import styles from './TextArea.module.css'
 
 export interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -27,11 +27,15 @@ export function TextArea({
     el.style.overflowY = el.scrollHeight + 2 > maxHeight ? 'auto' : 'hidden'
   }, [autoGrow, maxHeight, value])
 
-  const setRef = (el: HTMLTextAreaElement | null) => {
-    innerRef.current = el
-    if (typeof ref === 'function') ref(el)
-    else if (ref) ref.current = el
-  }
+  // Stable callback so React does not detach and re-attach the ref on every render.
+  const setRef = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      innerRef.current = el
+      if (typeof ref === 'function') ref(el)
+      else if (ref) ref.current = el
+    },
+    [ref],
+  )
 
   return (
     <textarea
