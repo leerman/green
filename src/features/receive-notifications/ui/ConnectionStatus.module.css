@@ -1,0 +1,10 @@
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-danger) 10%, white);
+  color: var(--color-danger);
+  font-size: 13px;
+}

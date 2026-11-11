@@ -31,7 +31,7 @@
 - [x] 4.4 Implement `features/send-message`: `model/send-message.ts` (`sendMessage`, `retry`), `ui/MessageInput` (auto-growing textarea, Enter/Shift+Enter, block empty input, 4000-character limit, clear after sending), and `ui/RetryButton`; verify with tests against a mock API (success, error → `failed`, retry → one copy) and manually against the "Message input validation" scenarios
 - [ ] 4.5 Check on a real instance (manually, through a temporary script or the dev console) that `idMessage` from `sendMessage` matches `idMessage` in `outgoingAPIMessageReceived`, and record which text field outgoing notifications use; record the result in design.md Open Questions and use it in task 4.6
 - [x] 4.6 Implement `features/receive-notifications/lib`: `mapNotification` (design D4, accounting for the result of task 4.5) and `backoff`; verify with tests for every webhook type, groups, old timestamps, broken format, and the backoff sequence/reset
-- [ ] 4.7 Implement `features/receive-notifications/model/poller.ts` (design D6): one loop, `AbortController`, dispatch then `deleteWithRetry`, `runId` guard, `session.setConnection`; and `ui/ConnectionStatus`; verify with Vitest using fake timers and a fake API: every notification is removed, `stop()` stops requests, the delay grows and resets, and a stale loop does not dispatch
+- [x] 4.7 Implement `features/receive-notifications/model/poller.ts` (design D6): one loop, `AbortController`, dispatch then `deleteWithRetry`, `runId` guard, `session.setConnection`; and `ui/ConnectionStatus`; verify with Vitest using fake timers and a fake API: every notification is removed, `stop()` stops requests, the delay grows and resets, and a stale loop does not dispatch
 
 ## 5. App, widgets, pages
 
