@@ -12,7 +12,7 @@
 
 - [x] 2.1 Implement `shared/lib/phone` (`normalizePhone`: digits only, no country binding or prefix rewriting, length 7–15, error otherwise) with its public API; verify with tests in `normalize-phone.test.ts` that cover the chat-management spec scenarios
 - [x] 2.2 Describe the GREEN-API request, response, and notification types in `shared/api/green-api/types.ts` and implement `createApi` in `client.ts` on an axios instance (design D7): six methods, a separate timeout for `receiveNotification`, `null` for an empty response; verify that `npm run typecheck` passes
-- [ ] 2.3 Implement `ApiError` and the interceptor in `shared/api/green-api/errors.ts` (auth/limit/network/server/validation/canceled) without passing on `config.url`; verify with tests that mock the axios adapter: status mapping, and that neither the `ApiError` nor its `message` contains the token
+- [x] 2.3 Implement `ApiError` and the interceptor in `shared/api/green-api/errors.ts` (auth/limit/network/server/validation/canceled) without passing on `config.url`; verify with tests that mock the axios adapter: status mapping, and that neither the `ApiError` nor its `message` contains the token
 - [ ] 2.4 Implement `shared/ui` (Button, TextField, TextArea, Spinner) on CSS Modules with theme variables from `app/styles`; verify visually in `npm run dev` and with `npm run lint:fsd`
 
 ## 3. Entities: session, message, chat

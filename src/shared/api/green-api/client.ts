@@ -1,5 +1,6 @@
-import axios from 'axios'
+import axios, { type AxiosAdapter } from 'axios'
 import { env } from '@/shared/config'
+import { installErrorInterceptor } from './errors'
 import type {
   CheckAccountResponse,
   Credentials,
@@ -26,13 +27,17 @@ export interface GreenApi {
 
 export interface CreateApiOptions {
   baseURL?: string
+  /** Custom axios adapter; used by tests. */
+  adapter?: AxiosAdapter
 }
 
 export function createApi(
   { idInstance, apiTokenInstance }: Credentials,
-  { baseURL = env.greenApiUrl }: CreateApiOptions = {},
+  { baseURL = env.greenApiUrl, adapter }: CreateApiOptions = {},
 ): GreenApi {
-  const http = axios.create({ baseURL, timeout: DEFAULT_TIMEOUT_MS })
+  const http = axios.create({ baseURL, timeout: DEFAULT_TIMEOUT_MS, adapter })
+  // Every rejection leaves the client as an ApiError without the URL/token.
+  installErrorInterceptor(http)
 
   // The token lives only inside this closure.
   const url = (method: string, suffix = '') =>
