@@ -6,10 +6,15 @@ import styles from './MessageList.module.css'
 
 export function MessageList({ chat }: { chat: Chat }) {
   const endRef = useRef<HTMLDivElement>(null)
+  const seen = useRef<{ chatId: string; count: number } | null>(null)
   const count = chat.messages.length
 
-  // Scroll to the newest message when one is added or another chat is opened.
+  // Scroll to the newest message when one is added or another chat is opened,
+  // but not when the count drops (a local copy merged into its server copy).
   useLayoutEffect(() => {
+    const prev = seen.current
+    seen.current = { chatId: chat.chatId, count }
+    if (prev && prev.chatId === chat.chatId && count <= prev.count) return
     endRef.current?.scrollIntoView({ block: 'end' })
   }, [chat.chatId, count])
 
