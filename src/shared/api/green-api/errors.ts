@@ -33,7 +33,7 @@ export function isApiError(error: unknown): error is ApiError {
 
 export function kindFromStatus(status: number): ApiErrorKind {
   if (status === 401 || status === 403) return 'auth'
-  if (status === 469) return 'limit'
+  if (status === 469 || status === 429) return 'limit'
   if (status >= 500) return 'server'
   return 'validation'
 }

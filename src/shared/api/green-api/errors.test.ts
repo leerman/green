@@ -48,6 +48,7 @@ describe('ApiError mapping', () => {
     [401, 'auth'],
     [403, 'auth'],
     [469, 'limit'],
+    [429, 'limit'],
     [400, 'validation'],
     [404, 'validation'],
     [466, 'validation'],

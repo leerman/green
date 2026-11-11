@@ -203,7 +203,7 @@ A generation guard (`runId`) stops a loop from a previous session from writing t
 - Each URL is built as `/waInstance${id}/${method}/${token}`. The token exists only inside the client closure.
 - `receiveNotification` uses its own `timeout = (receiveTimeout + 10) * 1000`. Otherwise axios would abort normal long polling.
 - An empty response (`null` or `""`) becomes `null`.
-- A response interceptor converts any `AxiosError` into `ApiError { kind, status?, message }` (`errors.ts`) with `kind: "auth" | "limit" | "network" | "server" | "validation" | "canceled"`. The original error, which contains `config.url` with the token, is not passed on. Mapping: 401/403 → auth, 469 → limit, 4xx → validation, 5xx → server, no response → network, `CanceledError` → canceled.
+- A response interceptor converts any `AxiosError` into `ApiError { kind, status?, message }` (`errors.ts`) with `kind: "auth" | "limit" | "network" | "server" | "validation" | "canceled"`. The original error, which contains `config.url` with the token, is not passed on. Mapping: 401/403 → auth, 469/429 → limit, 4xx → validation, 5xx → server, no response → network, `CanceledError` → canceled.
 - The app has no `console.*` with request data.
 - `shared/api` knows nothing about entities. It returns GREEN-API types (`types.ts`).
 
