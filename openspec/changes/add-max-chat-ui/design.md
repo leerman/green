@@ -218,7 +218,8 @@ login(id, token):
   state = await api.getStateInstance()        // ApiError auth -> "Invalid credentials"
   if state !== "authorized" -> session.setError(state)
   settings = await api.getSettings()          // on error: a warning, not a block
-  warnings = checkSettings(settings)          // lib: webhookUrl != "", incomingWebhook != "yes"
+  warnings = checkSettings(settings)          // lib: webhookUrl != "", incomingWebhook != "yes",
+                                              //      outgoing(API)MessageWebhook != "yes"
   session.setReady({ api, loginAt: Date.now(), warnings })
   // the poller is started by app/session-lifecycle in reaction to status === "ready"
 ```

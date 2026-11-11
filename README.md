@@ -13,14 +13,14 @@ Log in with your GREEN-API instance credentials. You can then start chats by pho
 
 You need a GREEN-API instance for MAX that is **authorized** (state `authorized`). In the instance settings:
 
-| Setting           | Value   | Why                                                                      |
-| ----------------- | ------- | ------------------------------------------------------------------------ |
-| `webhookUrl`      | empty   | When a webhook URL is set, notifications go there instead of the HTTP API queue |
-| `incomingWebhook` | `yes`   | Otherwise incoming messages are not reported                             |
+| Setting                     | Value | Why                                                                             |
+| --------------------------- | ----- | ------------------------------------------------------------------------------- |
+| `webhookUrl`                | empty | When a webhook URL is set, notifications go there instead of the HTTP API queue |
+| `incomingWebhook`           | `yes` | Otherwise incoming messages are not reported                                    |
+| `outgoingMessageWebhook`    | `yes` | Shows messages you send from your phone                                         |
+| `outgoingAPIMessageWebhook` | `yes` | Delivers the server copy of messages sent from this app                         |
 
-To see messages you send from your phone, also enable `outgoingWebhook` / `outgoingMessageWebhook`. Enable `outgoingAPIMessageWebhook` as well, so the server copies of messages sent from this app are received.
-
-The app checks `webhookUrl` and `incomingWebhook` on login and shows a warning if they are wrong. The warning does not block login.
+The app checks all four settings on login and shows a warning for any that are wrong. The warning does not block login.
 
 ## Getting started
 

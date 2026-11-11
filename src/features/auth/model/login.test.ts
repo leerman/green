@@ -7,13 +7,20 @@ import { INVALID_CREDENTIALS_MESSAGE, login } from './login'
 function mockApi(overrides: Partial<GreenApi> = {}): GreenApi {
   return {
     getStateInstance: vi.fn(async () => ({ stateInstance: 'authorized' })),
-    getSettings: vi.fn(async () => ({ webhookUrl: '', incomingWebhook: 'yes' })),
+    getSettings: vi.fn(async () => GOOD_SETTINGS),
     checkAccount: vi.fn(),
     sendMessage: vi.fn(),
     receiveNotification: vi.fn(),
     deleteNotification: vi.fn(),
     ...overrides,
   } as GreenApi
+}
+
+const GOOD_SETTINGS = {
+  webhookUrl: '',
+  incomingWebhook: 'yes',
+  outgoingMessageWebhook: 'yes',
+  outgoingAPIMessageWebhook: 'yes',
 }
 
 const creds = { idInstance: ' 1101000001 ', apiTokenInstance: ' tok ' }
@@ -56,7 +63,7 @@ describe('login', () => {
   })
 
   it('adds settings warnings without blocking login', async () => {
-    const api = mockApi({ getSettings: vi.fn(async () => ({ webhookUrl: 'https://x', incomingWebhook: 'no' })) })
+    const api = mockApi({ getSettings: vi.fn(async () => ({ ...GOOD_SETTINGS, webhookUrl: 'https://x', incomingWebhook: 'no' })) })
     await login(creds, { createApi: () => api })
     expect(session()).toMatchObject({ status: 'ready', warnings: [WEBHOOK_URL_WARNING, INCOMING_WEBHOOK_WARNING] })
   })
