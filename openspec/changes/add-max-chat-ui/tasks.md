@@ -25,7 +25,7 @@
 
 ## 4. Features
 
-- [ ] 4.1 Implement `features/auth`: `lib/check-settings.ts`, `model/login.ts` (design D8), and `ui/LoginForm` (required fields, loading state, errors by `ApiError.kind`); verify with tests of `login` against a mock API (wrong credentials, unauthorized instance, settings warnings, `setReady` on success) and of `checkSettings`
+- [x] 4.1 Implement `features/auth`: `lib/check-settings.ts`, `model/login.ts` (design D8), and `ui/LoginForm` (required fields, loading state, errors by `ApiError.kind`); verify with tests of `login` against a mock API (wrong credentials, unauthorized instance, settings warnings, `setReady` on success) and of `checkSettings`
 - [ ] 4.2 Implement `features/logout` (`LogoutButton` → `session.clear()`); verify with `npm run lint:fsd` and a manual click in `npm run dev`
 - [ ] 4.3 Implement `features/create-chat`: `model/create-chat.ts` (design D9) and `ui/CreateChatForm` (inline form, errors); verify with tests against a mock API: invalid number without a request, existing chat without `checkAccount`, `exist:false`, API validation error, 469, `status:false`, existing `chatId`, success
 - [ ] 4.4 Implement `features/send-message`: `model/send-message.ts` (`sendMessage`, `retry`), `ui/MessageInput` (auto-growing textarea, Enter/Shift+Enter, block empty input, 4000-character limit, clear after sending), and `ui/RetryButton`; verify with tests against a mock API (success, error → `failed`, retry → one copy) and manually against the "Message input validation" scenarios
