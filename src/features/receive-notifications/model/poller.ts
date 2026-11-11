@@ -1,12 +1,10 @@
 import { useChatsStore, type ChatEvent } from '@/entities/chat'
 import { useSessionStore, type ConnectionState } from '@/entities/session'
-import { isApiError, type GreenApi } from '@/shared/api'
+import { describeApiError, isApiError, type ApiError, type GreenApi } from '@/shared/api'
 import { createBackoff } from '../lib/backoff'
 import { mapNotification } from '../lib/map-notification'
 
 export const RECEIVE_TIMEOUT_S = 20
-export const SESSION_REVOKED_MESSAGE =
-  'GREEN-API rejected the instance credentials. The token may have been changed. Log in again.'
 export const DELETE_ATTEMPTS = 3
 export const DELETE_RETRY_DELAY_MS = 1000
 /** Failures in a row after which the connection is shown as lost. */
@@ -16,7 +14,7 @@ export interface PollerDeps {
   dispatch(event: ChatEvent): void
   setConnection(connection: ConnectionState): void
   /** Credentials were rejected (401/403): retrying cannot help, the session must end. */
-  onAuthError(): void
+  onAuthError(error: ApiError): void
 }
 
 export interface Poller {
@@ -78,7 +76,7 @@ export function createPoller(deps: PollerDeps): Poller {
       } catch (error) {
         if (isStale()) return
         if (isApiError(error) && error.kind === 'auth') {
-          deps.onAuthError()
+          deps.onAuthError(error)
           return
         }
         // `attempts` does not count this failure yet; next() records it below.
@@ -108,5 +106,5 @@ export const poller = createPoller({
   dispatch: (event) => useChatsStore.getState().apply(event),
   setConnection: (connection) => useSessionStore.getState().setConnection(connection),
   // Leaving `ready` makes app/session-lifecycle stop this poller and clear chats.
-  onAuthError: () => useSessionStore.getState().setError(SESSION_REVOKED_MESSAGE),
+  onAuthError: (error) => useSessionStore.getState().setError(describeApiError(error)),
 })

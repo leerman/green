@@ -208,7 +208,7 @@ describe('poller', () => {
     const { api } = fakeApi([new ApiError('auth', status)])
     poller.start(api, LOGIN_AT)
     await vi.advanceTimersByTimeAsync(60_000)
-    expect(onAuthError).toHaveBeenCalledTimes(1)
+    expect(onAuthError).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ kind: 'auth', status }))
     expect(api.receiveNotification).toHaveBeenCalledTimes(1)
     expect(connection).toEqual([])
     poller.stop()
