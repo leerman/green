@@ -58,6 +58,11 @@ describe('mapNotification', () => {
     expect(ev).not.toHaveProperty('phone')
   })
 
+  it('drops a phone that is not a valid number', () => {
+    const ev = mapNotification(incoming({ senderData: { chatId: '1', senderPhoneNumber: 123 } }), LOGIN_AT)
+    expect(ev).not.toHaveProperty('phone')
+  })
+
   it('accepts a phone sent as a string', () => {
     const ev = mapNotification(incoming({ senderData: { chatId: '1', senderPhoneNumber: '+375291234567' } }), LOGIN_AT)
     expect(ev).toMatchObject({ phone: '375291234567' })

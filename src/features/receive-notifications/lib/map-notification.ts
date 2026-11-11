@@ -1,5 +1,6 @@
 import type { ChatEvent } from '@/entities/chat'
 import type { NotificationBody } from '@/shared/api'
+import { normalizePhone } from '@/shared/lib/phone'
 
 /** Notifications up to this many seconds older than login are still shown. */
 export const LOGIN_CLOCK_SKEW_S = 30
@@ -21,10 +22,11 @@ function readText(messageData: NotificationBody['messageData']): string | undefi
   )
 }
 
+/** Same normalization as chats created by number, so both match on `phone`. */
 function readPhone(value: unknown): string | undefined {
   if (typeof value !== 'string' && typeof value !== 'number') return undefined
-  const digits = String(value).replace(/\D/g, '')
-  return digits || undefined
+  const result = normalizePhone(String(value))
+  return result.ok ? result.phone : undefined
 }
 
 /**
