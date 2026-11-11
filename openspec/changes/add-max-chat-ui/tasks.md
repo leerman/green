@@ -2,10 +2,10 @@
 
 ## 1. Project setup and FSD skeleton
 
-- [ ] 1.1 Create a Vite project (react-ts template) in the repository root, configure strict TypeScript, and verify that `npm run dev` starts and `npm run build` succeeds
-- [ ] 1.2 Add dependencies `zustand`, `axios` and dev dependencies `vitest`, `steiger`, `@feature-sliced/steiger-plugin`; add the `test`, `typecheck`, and `lint:fsd` scripts; verify that each script runs
-- [ ] 1.3 Configure the `@/` → `src/` alias in `tsconfig` and `vite.config`, and verify that an import through `@/` builds and type-checks
-- [ ] 1.4 Create the FSD layers `src/{app,pages,widgets,features,entities,shared}`, move `main.tsx`/`App.tsx` into `app/`, and remove the Vite template's demo code; verify that the app builds and shows an empty `App`, and that `npm run lint:fsd` passes
+- [x] 1.1 Create a Vite project (react-ts template) in the repository root, configure strict TypeScript, and verify that `npm run dev` starts and `npm run build` succeeds
+- [x] 1.2 Add dependencies `zustand`, `axios` and dev dependencies `vitest`, `steiger`, `@feature-sliced/steiger-plugin`; add the `test`, `typecheck`, and `lint:fsd` scripts; verify that each script runs
+- [x] 1.3 Configure the `@/` → `src/` alias in `tsconfig` and `vite.config`, and verify that an import through `@/` builds and type-checks
+- [x] 1.4 Create the FSD layers `src/{app,pages,widgets,features,entities,shared}`, move `main.tsx`/`App.tsx` into `app/`, and remove the Vite template's demo code; verify that the app builds and shows an empty `App`, and that `npm run lint:fsd` passes
 - [ ] 1.5 Implement `shared/config/env.ts` (typed `VITE_GREEN_API_URL` in `vite-env.d.ts`), add `.env.example` with `VITE_GREEN_API_URL=https://api.green-api.com`, and add `.env` to `.gitignore`; verify that `npm run typecheck` passes
 
 ## 2. Shared: phone, API client, UI primitives
