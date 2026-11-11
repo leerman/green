@@ -3,7 +3,8 @@ import { useSessionStore } from '@/entities/session'
 
 export const MAX_MESSAGE_LENGTH = 4000
 
-export type SendResult = { ok: true; idMessage: string } | { ok: false; error: string }
+/** `queued: false` means nothing was added to the chat, so the caller should keep the draft. */
+export type SendResult = { ok: true; idMessage: string } | { ok: false; error: string; queued: boolean }
 
 export interface SendDeps {
   now?: () => number
@@ -19,18 +20,18 @@ async function deliver(chatId: string, tmpId: string, text: string): Promise<Sen
   const api = useSessionStore.getState().api
   if (!api) {
     useChatsStore.getState().apply({ type: 'messageFailed', chatId, tmpId })
-    return { ok: false, error: 'You are not logged in' }
+    return { ok: false, error: 'You are not logged in', queued: true }
   }
   try {
     const { idMessage } = await api.sendMessage(chatId, text)
     // Ignore responses that arrive after logout.
-    if (useSessionStore.getState().api !== api) return { ok: false, error: 'Session ended' }
+    if (useSessionStore.getState().api !== api) return { ok: false, error: 'Session ended', queued: true }
     useChatsStore.getState().apply({ type: 'messageSent', chatId, tmpId, idMessage: String(idMessage) })
     return { ok: true, idMessage: String(idMessage) }
   } catch (error) {
-    if (useSessionStore.getState().api !== api) return { ok: false, error: 'Session ended' }
+    if (useSessionStore.getState().api !== api) return { ok: false, error: 'Session ended', queued: true }
     useChatsStore.getState().apply({ type: 'messageFailed', chatId, tmpId })
-    return { ok: false, error: error instanceof Error ? error.message : 'Send failed' }
+    return { ok: false, error: error instanceof Error ? error.message : 'Send failed', queued: true }
   }
 }
 
@@ -40,10 +41,10 @@ export async function sendMessage(
   rawText: string,
   { now = Date.now, generateId = () => crypto.randomUUID() }: SendDeps = {},
 ): Promise<SendResult> {
-  if (!canSend(rawText)) return { ok: false, error: 'Message is empty or too long' }
+  if (!canSend(rawText)) return { ok: false, error: 'Message is empty or too long', queued: false }
   const text = rawText.trim()
   const chats = useChatsStore.getState()
-  if (!chats.chats[chatId]) return { ok: false, error: 'Chat not found' }
+  if (!chats.chats[chatId]) return { ok: false, error: 'Chat not found', queued: false }
 
   const tmpId = `tmp-${generateId()}`
   chats.apply({ type: 'messageQueued', chatId, tmpId, text, ts: now() })
@@ -55,7 +56,7 @@ export async function retry(chatId: string, messageId: string): Promise<SendResu
   const chats = useChatsStore.getState()
   const message = chats.chats[chatId]?.messages.find((m) => m.id === messageId)
   if (!message || message.direction !== 'out' || message.status !== 'failed') {
-    return { ok: false, error: 'Nothing to retry' }
+    return { ok: false, error: 'Nothing to retry', queued: false }
   }
   const text = message.content.type === 'text' ? message.content.text : ''
   chats.apply({ type: 'messageQueued', chatId, tmpId: messageId, text, ts: message.timestamp })

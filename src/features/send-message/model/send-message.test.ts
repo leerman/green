@@ -30,7 +30,7 @@ describe('send-message', () => {
 
   it('does not send a blank message', async () => {
     const api = login(async () => ({ idMessage: 'X' }))
-    expect((await sendMessage('42', '   ', deps)).ok).toBe(false)
+    expect(await sendMessage('42', '   ', deps)).toMatchObject({ ok: false, queued: false })
     expect(api.sendMessage).not.toHaveBeenCalled()
     expect(messages()).toEqual([])
   })
@@ -53,7 +53,7 @@ describe('send-message', () => {
   it('marks the message failed on error', async () => {
     login(async () => Promise.reject(new ApiError('network')))
     const result = await sendMessage('42', 'hello', deps)
-    expect(result.ok).toBe(false)
+    expect(result).toMatchObject({ ok: false, queued: true })
     expect(messages()).toHaveLength(1)
     expect(messages()[0]).toMatchObject({ id: 'tmp-abc', status: 'failed' })
   })
@@ -70,6 +70,12 @@ describe('send-message', () => {
     expect(api.sendMessage).toHaveBeenNthCalledWith(2, '42', 'hello')
     expect(messages()).toHaveLength(1)
     expect(messages()[0]).toMatchObject({ id: 'SRV2', status: 'sent', timestamp: 1000 })
+  })
+
+  it('reports queued:false for an unknown chat so the draft can be kept', async () => {
+    const api = login(async () => ({ idMessage: 'X' }))
+    expect(await sendMessage('nope', 'hello', deps)).toMatchObject({ ok: false, queued: false })
+    expect(api.sendMessage).not.toHaveBeenCalled()
   })
 
   it('retry does nothing for a message that is not failed', async () => {
