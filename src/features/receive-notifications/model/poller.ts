@@ -22,7 +22,6 @@ export interface PollerDeps {
 export interface Poller {
   start(api: GreenApi, loginAt: number): void
   stop(): void
-  readonly running: boolean
 }
 
 /** Resolves after `ms`, or immediately when the signal aborts. */
@@ -100,9 +99,6 @@ export function createPoller(deps: PollerDeps): Poller {
       runId++
       controller?.abort()
       controller = null
-    },
-    get running() {
-      return controller !== null
     },
   }
 }

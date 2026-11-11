@@ -126,7 +126,6 @@ describe('poller', () => {
     const signal = api.receiveNotification.mock.calls[0][0].signal!
     poller.stop()
     expect(signal.aborted).toBe(true)
-    expect(poller.running).toBe(false)
     await vi.advanceTimersByTimeAsync(60_000)
     expect(api.receiveNotification).toHaveBeenCalledTimes(1)
   })
