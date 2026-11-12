@@ -10,7 +10,7 @@
 - [x] 2.1 Add `type` and `history` to `Chat`, `sender?` to `Message`, and set `type` (inferred from the `-` prefix) and `history: 'idle'` on every path that creates a chat in `applyEvent`; `chatCreated`, `incomingReceived`, and `outgoingReceived` accept an optional `type`/`sender` (design D2); verify existing `apply-event.test.ts` tests still pass, plus new tests for inferred types and a sender on `incomingReceived`
 - [x] 2.2 Implement `chatsLoaded` in `applyEvent` (design D3): append new chats after existing ones in server order, set `type` and fill a missing `phone` on existing chats, never change title, position, messages, or the active chat; verify with tests for the "Merge the loaded chat list with existing chats" scenarios and the "Chat without a phone number" scenario
 - [x] 2.3 Implement `historyRequested`, `historyLoaded`, and `historyFailed` in `applyEvent` (design D3): insert by timestamp only ids not yet present, keep live/`sending`/`failed` messages, do not move the chat, ignore unknown chats; verify with tests for every scenario in the chat-history "Show loaded history" and "Merge history with live messages" requirements
-- [ ] 2.4 Show the sender's name in `MessageBubble` when a `showSender` prop is set and `message.sender?.name` exists (design D2); verify with `npm run lint:fsd` and visually with a group message in `npm run dev`
+- [x] 2.4 Show the sender's name in `MessageBubble` when a `showSender` prop is set and `message.sender?.name` exists (design D2); verify with `npm run lint:fsd` and visually with a group message in `npm run dev`
 
 ## 3. Loading feature (`features/load-chats`)
 

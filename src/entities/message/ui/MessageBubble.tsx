@@ -7,6 +7,8 @@ export interface MessageBubbleProps {
   message: Message
   /** Slot for actions supplied by features (e.g. retry). */
   actions?: ReactNode
+  /** Show the sender's name above incoming messages (group chats). */
+  showSender?: boolean
 }
 
 function Content({ content }: { content: MessageContent }) {
@@ -45,8 +47,9 @@ function StatusIcon({ status }: { status: MessageStatus }) {
   )
 }
 
-export function MessageBubble({ message, actions }: MessageBubbleProps) {
+export function MessageBubble({ message, actions, showSender = false }: MessageBubbleProps) {
   const { direction, status } = message
+  const senderName = showSender && direction === 'in' ? message.sender?.name : undefined
   const rowClass = [styles.row, styles[direction], status === 'failed' && styles.failed]
     .filter(Boolean)
     .join(' ')
@@ -54,6 +57,7 @@ export function MessageBubble({ message, actions }: MessageBubbleProps) {
   return (
     <div className={rowClass} data-message-id={message.id}>
       <div className={styles.bubble}>
+        {senderName && <div className={styles.sender}>{senderName}</div>}
         <Content content={message.content} />
         <div className={styles.meta}>
           {status === 'failed' && <span className={styles.failedLabel}>Not sent</span>}
