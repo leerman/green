@@ -3,10 +3,10 @@ import { useChatsStore, type ChatEvent } from '@/entities/chat'
 import { describeApiError, type GreenApi } from '@/shared/api'
 import { mapChats } from '../lib/map-chats'
 
-export type ChatListStatus = 'idle' | 'loading' | 'error'
+export type ChatListLoadStatus = 'idle' | 'loading' | 'error'
 
 export interface ChatListState {
-  status: ChatListStatus
+  status: ChatListLoadStatus
   /** User-facing error of the last failed load. */
   error: string | null
 }
