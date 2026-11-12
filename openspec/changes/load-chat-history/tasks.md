@@ -41,7 +41,7 @@
 - [x] 7.1 Add `formatDayLabel(timestamp, now)` and `formatListTime(timestamp, now)` to `entities/message/lib/format.ts` and export them (design D10); verify with unit tests using a fixed `now`: today, yesterday, earlier this year, an earlier year, and messages a minute before and after local midnight
 - [x] 7.2 Render date separators in `MessageList` before the first message of each local day (design D10); verify with `ChatWindow.test.tsx` render tests for the messaging "Group messages by date" scenarios: several days, today/yesterday labels, a single-day chat with one separator, and a seeded preview followed by loaded history with one separator per day
 - [x] 7.3 Show `formatListTime` in `ChatListItem` instead of `formatTime` (design D10); verify with a render test for the chat-management "Date of the latest message" scenario and `npm run lint:fsd`
-- [ ] 7.4 Check in the browser on a real instance: a chat with several days of history shows one separator per day with the right labels, a new message after midnight gets a "Today" separator, and sidebar items show times for today and dates for older chats; also verify that `npm test`, `npm run typecheck`, `npm run lint:fsd`, and `npm run build` pass
+- [x] 7.4 Check in the browser on a real instance: a chat with several days of history shows one separator per day with the right labels, a new message after midnight gets a "Today" separator, and sidebar items show times for today and dates for older chats; also verify that `npm test`, `npm run typecheck`, `npm run lint:fsd`, and `npm run build` pass
 
 ## Workflow follow-up
 
