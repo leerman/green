@@ -1,6 +1,6 @@
 import type { Message } from '@/entities/message/@x/chat'
 import type { ChatEvent, LoadedChat } from './events'
-import type { Chat, ChatsState, ChatType } from './types'
+import type { Chat, ChatsState, ChatType, HistoryState } from './types'
 
 /** Group chat IDs are negative numbers in MAX; everything else is treated as personal. */
 export function inferChatType(chatId: string): ChatType {
@@ -71,6 +71,25 @@ function mergeLoadedChats(state: ChatsState, loaded: LoadedChat[]): ChatsState {
   }
   if (!changed) return state
   return { ...state, chats, order: [...state.order, ...appended] }
+}
+
+function setHistory(state: ChatsState, chatId: string, history: HistoryState): ChatsState {
+  const chat = state.chats[chatId]
+  if (!chat || chat.history === history) return state
+  return updateChat(state, { ...chat, history }, { toTop: false })
+}
+
+function mergeHistory(state: ChatsState, chatId: string, history: Message[]): ChatsState {
+  const chat = state.chats[chatId]
+  if (!chat) return state
+  const known = new Set(chat.messages.map((m) => m.id))
+  let messages = chat.messages
+  for (const message of history) {
+    if (known.has(message.id)) continue
+    known.add(message.id)
+    messages = insertByTimestamp(messages, message)
+  }
+  return updateChat(state, { ...chat, messages, history: 'loaded' }, { toTop: false })
 }
 
 export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
@@ -152,6 +171,15 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
 
     case 'chatsLoaded':
       return mergeLoadedChats(state, event.chats)
+
+    case 'historyRequested':
+      return setHistory(state, event.chatId, 'loading')
+
+    case 'historyLoaded':
+      return mergeHistory(state, event.chatId, event.messages)
+
+    case 'historyFailed':
+      return setHistory(state, event.chatId, 'error')
 
     case 'outgoingReceived': {
       const chat = state.chats[event.chatId]

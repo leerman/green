@@ -1,4 +1,4 @@
-import type { MessageSender } from '@/entities/message/@x/chat'
+import type { Message, MessageSender } from '@/entities/message/@x/chat'
 import type { ChatType } from './types'
 
 /** One chat from the server's chat list. */
@@ -36,5 +36,12 @@ export type ChatEvent =
    * existing ones; existing chats only get their type and a missing phone.
    */
   | { type: 'chatsLoaded'; chats: LoadedChat[] }
+  | { type: 'historyRequested'; chatId: string }
+  /**
+   * Messages from the server's history, oldest first. Only ids not yet in the chat are added;
+   * messages already there (live copies, sending, failed) are kept as they are.
+   */
+  | { type: 'historyLoaded'; chatId: string; messages: Message[] }
+  | { type: 'historyFailed'; chatId: string }
 
 export type ChatEventType = ChatEvent['type']
