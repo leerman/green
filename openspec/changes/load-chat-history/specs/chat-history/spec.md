@@ -25,6 +25,29 @@ The first time the user opens a chat in a session, the system SHALL request its 
 - **WHEN** a chat received live messages in this session and the user opens it for the first time
 - **THEN** the system requests its history
 
+#### Scenario: Chat with a preview from the list
+- **WHEN** a chat shows its latest message from the chat list and the user opens it for the first time
+- **THEN** the system requests its history, and the latest message appears only once
+
+### Requirement: Pace history requests
+The system SHALL send at most one history request at a time, start each request at least 1.5 seconds after the previous one started, and serve them in the order the chats were opened. When GREEN-API answers with HTTP 429, the system SHALL wait and retry automatically, up to 2 retries, before treating the load as failed.
+
+#### Scenario: Several chats opened quickly
+- **WHEN** the user opens three chats within one second
+- **THEN** the system requests their histories one after another, at least 1.5 seconds apart, and each chat shows a loading indicator until its turn completes
+
+#### Scenario: Rate limit answered once
+- **WHEN** `getChatHistory` answers HTTP 429 and the retry succeeds
+- **THEN** the history is shown and no error appears
+
+#### Scenario: Rate limit persists
+- **WHEN** `getChatHistory` answers HTTP 429 to the first request and to both retries
+- **THEN** the chat window shows the history load error with a retry button
+
+#### Scenario: Other errors are not retried automatically
+- **WHEN** `getChatHistory` fails with a network or server error other than HTTP 429
+- **THEN** the system does not retry automatically and shows the error with a retry button
+
 ### Requirement: Show loaded history
 The system SHALL add the text messages from the history to the chat, ordered by their timestamp, as incoming or outgoing according to the history entry. Outgoing messages from history SHALL have the status "sent". Loading history SHALL NOT move the chat in the list and SHALL NOT change the active chat.
 

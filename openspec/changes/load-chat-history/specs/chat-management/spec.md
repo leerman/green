@@ -3,11 +3,19 @@
 ## ADDED Requirements
 
 ### Requirement: Load the chat list at login
-After a successful login, the system SHALL request the chat list once with `getChats` and add every returned chat to the sidebar, whatever its type: personal, group, channel, or bot. A chat's title SHALL be its name from GREEN-API, or its `chatId` when the name is empty.
+After a successful login, the system SHALL request the chat list once with `getChats` and add every returned chat to the sidebar, whatever its type: personal, group, channel, or bot. A chat's title SHALL be its name from GREEN-API, or its `chatId` when the name is empty. When a chat's latest message from the list is a text message, it SHALL be added to the chat.
 
 #### Scenario: Chats on the server
 - **WHEN** the user logs in and `getChats` returns chats
 - **THEN** the sidebar shows those chats in the order GREEN-API returned them, each with its title
+
+#### Scenario: Latest message as preview
+- **WHEN** `getChats` returns a chat whose latest message is a text message
+- **THEN** that chat's sidebar item shows the message text and time without opening the chat
+
+#### Scenario: Latest message is not text
+- **WHEN** `getChats` returns a chat whose latest message is a photo
+- **THEN** that chat's sidebar item shows only the title
 
 #### Scenario: All chat types
 - **WHEN** `getChats` returns a personal chat, a group, a channel, and a bot
@@ -22,11 +30,11 @@ After a successful login, the system SHALL request the chat list once with `getC
 - **THEN** the sidebar shows the empty list and the prompt to create a chat
 
 ### Requirement: Merge the loaded chat list with existing chats
-Loading the chat list SHALL NOT remove, reorder, or retitle chats already in the sidebar, and SHALL NOT change the active chat. Loaded chats not yet in the sidebar SHALL be added below the existing ones, in server order. For a chat already in the sidebar, the system SHALL only fill in its chat type and a missing phone number.
+Loading the chat list SHALL NOT remove, reorder, or retitle chats already in the sidebar, and SHALL NOT change the active chat. Loaded chats not yet in the sidebar SHALL be added below the existing ones, in server order. For a chat already in the sidebar, the system SHALL only fill in its chat type and a missing phone number, and add the latest text message from the list when that message is not already in the chat.
 
 #### Scenario: Message arrives during the load
 - **WHEN** a live message creates a chat while `getChats` is pending, and the response includes that chat
-- **THEN** the chat stays at the top of the list, appears only once, and keeps its messages
+- **THEN** the chat stays at the top of the list, appears only once, keeps its messages, and does not get a second copy of a message it already has
 
 #### Scenario: Chat created by phone during the load
 - **WHEN** the user creates and opens a chat by phone number while `getChats` is pending
@@ -94,8 +102,8 @@ The system SHALL show the list of chats in the sidebar. The order SHALL start fr
 - **WHEN** a message arrives in or is sent to a chat that is not at the top of the list
 - **THEN** that chat moves to the top of the list
 
-#### Scenario: Chat without loaded messages
-- **WHEN** a chat from the loaded list has no messages in the app yet
+#### Scenario: Chat without messages
+- **WHEN** a chat in the list has no text messages in the app yet
 - **THEN** its item shows only the title, with no preview or time
 
 #### Scenario: Empty list

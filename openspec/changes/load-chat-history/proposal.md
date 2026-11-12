@@ -6,8 +6,8 @@ The app keeps everything in memory and starts every session with an empty sideba
 
 ## What Changes
 
-- On login, the app loads the chat list with `getChats` and fills the sidebar in the server's activity order. Chats that already got live messages during the load keep their position. A failed load shows an error with a retry and does not end the session.
-- History is loaded lazily: the first time a chat is opened, the app requests its last 100 messages with `getChatHistory` and merges them with the messages already in the chat by `idMessage`. Each chat has a history state (not loaded, loading, loaded, failed). A failed load shows an error with a retry in the chat window.
+- On login, the app loads the chat list with `getChats` and fills the sidebar in the server's activity order. Each chat's latest message, which `getChats` returns as `lastMessage`, gives the sidebar its preview and time when that message is text. Chats that already got live messages during the load keep their position. A failed load shows an error with a retry and does not end the session.
+- History is loaded lazily: the first time a chat is opened, the app requests its last 100 messages with `getChatHistory` and merges them with the messages already in the chat by `idMessage`. Each chat has a history state (not loaded, loading, loaded, failed). History requests run one at a time with a minimum gap, because GREEN-API answers back-to-back calls with HTTP 429, and a 429 is retried automatically a limited number of times. A load that still fails shows an error with a retry in the chat window.
 - All chat types from `getChats` are shown: personal chats, groups, channels, and bots. **BREAKING** (behavior): live notifications from group chats are no longer ignored.
 - In group chats, incoming messages show the sender's name. A chat created from a live group message is titled with the chat name, not the sender's name.
 - Channels are read-only: the message input is replaced by a "Read-only channel" footer.
@@ -20,7 +20,7 @@ The app keeps everything in memory and starts every session with an empty sideba
 - Reactions, edits, and deletions are not reflected.
 - Only the latest 100 messages are loaded. `getChatHistory` has no cursor, and the server keeps at most 5000 messages or 3 months.
 - Read state is not synced, and unread counts are not shown. GREEN-API for MAX has no method to mark a chat as read.
-- Chats that have not been opened show only their title until a message arrives or the chat is opened.
+- A chat whose latest message is not text shows no preview in the sidebar until a text message arrives or the chat is opened.
 
 ## Capabilities
 
@@ -38,6 +38,6 @@ The app keeps everything in memory and starts every session with an empty sideba
 ## Impact
 
 - **Code:** `shared/api/green-api` (new `getChats` and `getChatHistory` methods and types); `entities/chat` (chat `type`, history state, new bulk events and merge rules); `entities/message` (optional sender on a message, author line in the bubble); `features/receive-notifications` (group filter removed, group titles and senders); a new feature slice that loads the chat list and history; `widgets/chat-window` (history loading and error states, read-only footer); `widgets/sidebar` (list load error); `app/model/session-lifecycle.ts` (start and cancel the chat list load).
-- **External systems:** new GREEN-API calls `getChats` (once per login, plus retries) and `getChatHistory` (once per opened chat, plus retries). Both have per-second rate limits on the GREEN-API side.
+- **External systems:** new GREEN-API calls `getChats` (once per login, plus retries) and `getChatHistory` (once per opened chat, plus retries). Both have per-second rate limits on the GREEN-API side, and `getChatHistory` returns HTTP 429 when called about a second after the previous call.
 - **Docs:** README feature list and a new limitations section.
 - **No new dependencies.** State stays in memory only.

@@ -10,7 +10,7 @@ See proposal.md (Why) for the motivation and the specs for the required behavior
 - `Chat` has no type or load state. `Message` has no sender.
 
 GREEN-API for MAX facts (from the docs; to be confirmed on a real instance, see tasks):
-- `GET getChats` returns `[{ chatId, name, type: user|group|channel|bot, phoneNumber, unreadCount }]`, sorted by activity. It has an optional `count`, no pagination, no last message and no timestamp. `phoneNumber` is `0` for groups and hidden numbers.
+- `GET getChats` returns `[{ chatId, name, type: user|group|channel|bot, phoneNumber, unreadCount, lastMessage? }]`, sorted by activity. It has an optional `count` and no pagination. `phoneNumber` is `0` for groups and hidden numbers. `lastMessage` is not in the docs and was found on a real instance (see Real-instance findings).
 - `POST getChatHistory { chatId, count }` returns messages newest first: `type: incoming|outgoing`, `idMessage`, `timestamp` (seconds), `typeMessage`, `textMessage`, `extendedTextMessage.text`, `senderId`, `senderName`, `senderContactName`, `isDeleted`, and more. There is no offset or cursor.
 
 ## Goals / Non-Goals
@@ -22,7 +22,7 @@ GREEN-API for MAX facts (from the docs; to be confirmed on a real instance, see 
 
 **Non-Goals:**
 - Caching across reloads (state stays in memory only).
-- Automatic retries with backoff for `getChats` or `getChatHistory`. Retries are user-driven, so a failing server is not hit in a loop.
+- Automatic retries for `getChats`, or for `getChatHistory` errors other than HTTP 429. Those retries are user-driven, so a failing server is not hit in a loop. A 429 from `getChatHistory` is retried automatically, a bounded number of times (D4).
 - Prefetching history, or loading older messages beyond the first 100.
 - Detecting channel admin rights.
 
@@ -52,12 +52,12 @@ Message + sender?: { id: string; name?: string }   (incoming group messages only
 
 | Event | Rule |
 |---|---|
-| `chatsLoaded { chats: { chatId, title, type, phone? }[] }` | Chats not in the store are appended to `order` after the existing ones, in server order. For chats already in the store, set `type` and fill a missing `phone`. Title, position, messages, and the active chat never change. |
+| `chatsLoaded { chats: { chatId, title, chatType, phone?, lastMessage? }[] }` | Chats not in the store are appended to `order` after the existing ones, in server order. For chats already in the store, set the type and fill a missing `phone`. `lastMessage` (already mapped, text only) is inserted by timestamp into new and existing chats when its `id` is not in the chat. Title, position, `history`, existing messages, and the active chat never change. |
 | `historyRequested { chatId }` | `history` becomes `loading`. Ignored if the chat does not exist. |
 | `historyLoaded { chatId, messages: Message[] }` | Insert each message whose `id` is not already in the chat, using the existing `insertByTimestamp`. Messages already present (live copies, `sending`, and `failed`) are kept as they are. `history` becomes `loaded`. The chat does not move in `order`. Ignored if the chat does not exist. |
 | `historyFailed { chatId }` | `history` becomes `error`. Messages are kept. |
 
-`incomingReceived` gains an optional `sender`, and `chatCreated` and the auto-create paths gain `type`. `insertByTimestamp` already handles an unsorted batch when applied one message at a time. The mapper also sorts the batch oldest-first so equal timestamps keep server order.
+`incomingReceived` gains an optional `sender`, and `chatCreated` and the auto-create paths gain `chatType`. (`type` is the event discriminator, so the chat type travels as `chatType` on events.) Seeding `lastMessage` does not mark history as loaded: a chat with only its preview still loads the full history on first open, and the preview is deduplicated by `idMessage`. `insertByTimestamp` already handles an unsorted batch when applied one message at a time. The mapper also sorts the batch oldest-first so equal timestamps keep server order.
 
 "Kept as is" when the `idMessage` is already present (rather than the server copy winning, as for `outgoingReceived`) is deliberate. A live copy is at least as fresh as history, and replacing it could undo a status or position that the existing outgoing rules set.
 
@@ -65,7 +65,8 @@ Message + sender?: { id: string; name?: string }   (incoming group messages only
 
 ```
 features/load-chats/
-  lib/map-chats.ts       getChats item   -> chatsLoaded entry (title fallback, phone 0 -> none)
+  lib/map-chats.ts       getChats item   -> chatsLoaded entry (title fallback, phone 0 -> none,
+                         lastMessage through map-history)
   lib/map-history.ts     history item    -> Message | null   (text only, skip deleted)
   model/chat-list.ts     chatListLoader: start(api), retry(), stop(); status store
   model/history.ts       loadHistory(chatId); stopHistory()
@@ -76,7 +77,8 @@ features/load-chats/
 Both loaders live in one slice because the session lifecycle starts and stops them together, and features cannot import each other.
 
 - **Chat list:** `session-lifecycle.ts` calls `chatListLoader.start(api)` next to `poller.start`, and `chatListLoader.stop()` next to `poller.stop`. The loader keeps a `runId` and an `AbortController` like the poller. A response is applied only if its `runId` is still current. Its status (`idle | loading | error`) lives in a small zustand store in the slice, which `stop()` resets.
-- **History:** `loadHistory(chatId)` reads `api` from the session store, dispatches `historyRequested`, and calls `getChatHistory(chatId, 100)`. When the call settles, it applies the result only if the session store still holds the **same `api` instance** and the chat still exists. A new login always creates a new client, so this rules out cross-session writes even when the `chatId` is the same. Pending history controllers are kept in a set that `stopHistory()` aborts, and the lifecycle calls it on logout.
+- **History:** `loadHistory(chatId)` reads `api` from the session store, dispatches `historyRequested` at once (the chat shows its loading state while it waits its turn), and puts the chat in a FIFO queue. A single worker takes one chat at a time and calls `getChatHistory(chatId, 100)`, starting each request at least `HISTORY_MIN_INTERVAL_MS` (1500) after the previous one started. On an `ApiError` of kind `limit` (HTTP 429), it waits `HISTORY_RETRY_DELAY_MS` (3000) and retries, up to `HISTORY_MAX_RETRIES` (2). Any other error, or a 429 after the last retry, dispatches `historyFailed`. When a call settles, the worker applies the result only if the session store still holds the **same `api` instance** and the chat still exists. A new login always creates a new client, so this rules out cross-session writes even when the `chatId` is the same. `stopHistory()` empties the queue, aborts the request in flight and any pending wait, and bumps a generation counter so the worker exits. The lifecycle calls it on logout. The clock and timers are injectable so the pacing is tested with fake timers.
+- *Why a queue rather than only reacting to 429:* the real instance answered 429 to a call about a second after the previous one. Opening chats in quick succession is normal browsing, so pacing avoids most 429s instead of turning each into a delay. The retries cover the rest, for example a limit shared with another client of the same instance.
 - **Trigger:** `ChatWindow` runs an effect keyed on `chatId` that calls `loadHistory` when the chat's `history` is `idle` or `error`. So the first open loads, and reopening after a failure retries (spec: "History load error and retry"), while a loaded chat is never fetched again. A second open while loading is a no-op because the state is `loading`.
 
 *Alternative:* trigger history from `openChat` in the store. Rejected: an entity cannot call a feature, and it would hide a network call behind a state setter.
@@ -98,7 +100,7 @@ The before-login filter stays. History now covers the queue backlog, so dropping
 
 ### D7. Read-only channels and sidebar states
 
-`ChatWindow` renders a "Read-only channel" footer instead of `MessageInput` when `chat.type === 'channel'`. The sidebar renders `ChatListStatus` above the list. While loading with an empty list, it replaces the empty-list prompt. On error, it shows a banner with Retry, and the list and create-chat form stay usable. `ChatListItem` already hides the preview and time when there are no messages.
+`ChatWindow` renders a "Read-only channel" footer instead of `MessageInput` when `chat.type === 'channel'`. The sidebar renders `ChatListStatus` above the list. While loading with an empty list, it replaces the empty-list prompt. On error, it shows a banner with Retry, and the list and create-chat form stay usable. `ChatListItem` already hides the preview and time when there are no messages, and shows the seeded `lastMessage` otherwise.
 
 ### D8. Auth errors during loads
 
@@ -110,7 +112,8 @@ A 401/403 from `getChats` or `getChatHistory` is shown as an ordinary load error
 - [`getChats` without `count` returns only part of the list] → Real-instance check. If it is truncated, pass a large `count`. That is a one-line change and does not affect the specs.
 - [`getChats` returns `[]` with HTTP 200 on a server-side problem (documented)] → It is indistinguishable from "no chats". The empty-list prompt shows, and creating chats still works. Accepted.
 - [A channel created from a live notification is inferred as `group` until `getChats` reports it, so the input is shown and a send fails] → Rare: only when the list load failed or the notification beats it. The existing "not sent" + retry flow covers it.
-- [Rate limits when the user opens many chats quickly] → At most one request per chat per session, and there are no automatic retries. Acceptable for manual browsing.
+- [Rate limits when the user opens many chats quickly] → At most one request per chat per session, requests paced 1.5 s apart, and bounded automatic retries on 429. Opening many chats quickly makes later ones wait a few seconds, with a loading indicator.
+- [The 1.5 s gap and 3 s retry delay are guesses from two probes, not documented limits] → They are constants, and a persistent 429 still ends in the normal error with Retry.
 - [100 messages may contain few texts in media-heavy chats] → Documented limitation. `count` is a constant and can be raised later.
 
 ## Migration Plan
