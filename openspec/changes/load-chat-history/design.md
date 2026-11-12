@@ -117,7 +117,8 @@ The project has no DOM test environment, and adding one (jsdom, Testing Library)
   - `formatListTime(timestamp, now)` → "09:15" / "Yesterday" / "12 Nov" / "28 Dec 2025" (sidebar).
   Days are compared as local calendar dates, not 24-hour spans. Month names are English, like the rest of the UI, from a fixed list rather than `Intl`, so output does not depend on the runtime's locale data.
 - `MessageList` walks the already-sorted messages and renders a separator whenever the local day differs from the previous message's. Separators are derived on every render and never stored, so history merges, preview seeding, and live inserts cannot produce duplicate or misplaced separators. A separator is a centered chip styled like the existing "No messages yet" pill, not sticky.
-- `ChatListItem` replaces `formatTime` with `formatListTime(last.timestamp, Date.now())`.
+- `now` comes from a shared hook, `useNow()` in `shared/lib/time`: it reads the time once and refreshes it with a timer at each local midnight. Calling `Date.now()` during render is impure (oxlint `react(purity)`) and would make labels change between renders for no reason. `MessageList` and `ChatListItem` both use it.
+- `ChatListItem` replaces `formatTime` with `formatListTime(last.timestamp, now)`.
 
 *Alternative:* store day groups in `ChatsState`. Rejected: it duplicates what the message order already says and would need maintaining in every merge rule.
 
@@ -130,7 +131,7 @@ The project has no DOM test environment, and adding one (jsdom, Testing Library)
 - [Rate limits when the user opens many chats quickly] → At most one request per chat per session, requests paced 1.5 s apart, and bounded automatic retries on 429. Opening many chats quickly makes later ones wait a few seconds, with a loading indicator.
 - [The 1.5 s gap and 3 s retry delay are guesses from two probes, not documented limits] → They are constants, and a persistent 429 still ends in the normal error with Retry.
 - [100 messages may contain few texts in media-heavy chats] → Documented limitation. `count` is a constant and can be raised later.
-- [Day labels go stale across midnight: "Today" stays until the next render] → Any new message or chat switch re-renders. Accepted.
+- [Day labels go stale across midnight] → `useNow()` refreshes at each local midnight, so "Today" becomes "Yesterday" without a new message. If the tab is asleep at midnight, the timer fires when it wakes.
 - [Render tests do not run effects (D9)] → Effect-driven behavior is kept thin, and the browser check in the tasks covers it.
 
 ## Migration Plan
