@@ -5,7 +5,7 @@ A minimal web chat for [MAX](https://max.ru) on top of [GREEN-API](https://green
 Log in with your GREEN-API instance credentials. You can then start chats by phone number and exchange text messages. Replies, and messages sent from your phone, show up in the same chats. The app is a single-page React app with no backend: the browser calls GREEN-API directly.
 
 - Sends messages with `sendMessage`.
-- Receives messages over the HTTP API (`receiveNotification` / `deleteNotification`) with a single long-polling loop.
+- Receives messages over the HTTP API (`receiveNotification` / `deleteNotification`) with a single long-polling loop, in personal chats, groups, channels, and bots. In groups, each incoming message shows its sender's name.
 - Creates chats by phone number with `checkAccount`. A chat is also created automatically when a message arrives from an unknown sender.
 - Keeps everything in memory only. Reloading the page or logging out clears all state.
 
@@ -73,7 +73,7 @@ Key parts:
 
 ## Limitations
 
-- **Text messages only.** Images, files and other message types are ignored. Group chats are ignored.
+- **Text messages only.** Images, files and other message types are ignored.
 - **One tab per instance.** The notification queue is shared. With several tabs or apps reading the same instance, each notification goes to only one of them.
 - **No history.** Only messages that arrive after login are shown. Notifications from before login are dropped from the queue.
 - **The token is visible in the browser's Network tab.** GREEN-API puts the token in the request URL, and without a backend this cannot be hidden. The app does not log or store the token, and it is gone after a reload.

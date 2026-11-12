@@ -23,7 +23,7 @@
 ## 4. Live notifications for all chat types
 
 - [x] 4.1 Update `mapNotification` (design D6): remove the group filter; for group `chatId`s, title new chats from `chatName ?? chatId` and attach `sender` to `incomingReceived`; personal chats unchanged; verify by updating `map-notification.test.ts`: group incoming with sender and title, group outgoing from the phone, personal chat title order unchanged
-- [ ] 4.2 Update the README notification section and feature list so that group chats are no longer described as ignored; verify by reading the README against the notification-receiving spec delta
+- [x] 4.2 Update the README notification section and feature list so that group chats are no longer described as ignored; verify by reading the README against the notification-receiving spec delta
 
 ## 5. Wiring and UI
 
