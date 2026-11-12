@@ -112,6 +112,8 @@ export interface GetChatsItem {
   /** `0` when the number is hidden or the chat is a group. */
   phoneNumber?: number | string
   unreadCount?: number
+  /** Not in the docs; seen on a real instance. Same shape as a history item. */
+  lastMessage?: ChatHistoryItem
   [key: string]: unknown
 }
 
