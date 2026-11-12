@@ -40,11 +40,11 @@ The system SHALL NOT show messages from notifications with a time earlier than t
 - **THEN** the message does not appear in any chat, no chat is created, and the notification is removed from the queue
 
 ### Requirement: Filter notifications
-The system SHALL pass on to chats only notifications about incoming messages, outgoing API messages, and outgoing messages from other devices, of text type, in personal chats. Notifications from group chats SHALL be ignored.
+The system SHALL pass on to chats only notifications about incoming messages, outgoing API messages, and outgoing messages from other devices, of text type, in chats of any type, including group chats.
 
 #### Scenario: Group chat
-- **WHEN** a message notification arrives for a chat with a group identifier (a negative number)
-- **THEN** the system does not change the chats and removes the notification from the queue
+- **WHEN** a text message notification arrives for a chat with a group identifier (a negative number)
+- **THEN** the system adds the message to that group chat, creating the chat if it is not in the list, and removes the notification from the queue
 
 #### Scenario: Unexpected notification format
 - **WHEN** a notification does not have the fields needed for processing

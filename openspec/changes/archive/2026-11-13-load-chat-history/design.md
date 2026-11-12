@@ -9,7 +9,7 @@ See proposal.md (Why) for the motivation and the specs for the required behavior
 - `features/receive-notifications/lib/map-notification.ts` drops any `chatId` that starts with `-` (groups) and titles a new chat from the sender before the chat name.
 - `Chat` has no type or load state. `Message` has no sender.
 
-GREEN-API for MAX facts (from the docs, confirmed on a real instance on 2026-11-14; see Real-instance findings):
+GREEN-API for MAX facts (from the docs, confirmed on a real instance on 2026-11-13; see Real-instance findings):
 - `GET getChats` returns `[{ chatId, name, type: user|group|channel|bot, phoneNumber, unreadCount, lastMessage? }]`, sorted by activity. It has an optional `count` and no pagination. `phoneNumber` is `0` for groups and hidden numbers. `lastMessage` is not in the docs and was found on a real instance (see Real-instance findings).
 - `POST getChatHistory { chatId, count }` returns messages newest first: `type: incoming|outgoing`, `idMessage`, `timestamp` (seconds), `typeMessage`, `textMessage`, `extendedTextMessage.text`, `senderId`, `senderName`, `senderContactName`, `isDeleted`, and more. There is no offset or cursor.
 
@@ -140,10 +140,10 @@ No data migration: state is in memory only. Deploying replaces the static bundle
 
 ## Open Questions
 
-- ~~Does `getChats` without `count` return every chat?~~ Checked on a real instance on 2026-11-14 (task 1.2): it returned 28 chats (18 user, 4 group, 2 channel, 4 bot), sorted by latest activity. `getChats` is called without `count`.
+- ~~Does `getChats` without `count` return every chat?~~ Checked on a real instance on 2026-11-13 (task 1.2): it returned 28 chats (18 user, 4 group, 2 channel, 4 bot), sorted by latest activity. `getChats` is called without `count`.
 - ~~Do MAX group `chatId`s always start with `-`?~~ Yes, and so do channel `chatId`s. User and bot `chatId`s are positive. A channel created from a live notification is therefore inferred as `group` until `getChats` reports it (see Risks).
 
-### Real-instance findings (task 1.2, 2026-11-14)
+### Real-instance findings (task 1.2, 2026-11-13)
 
 - **`getChats` items also carry `lastMessage`** (not in the docs): a full history item (same shape as `getChatHistory`) or absent (seen on a bot with no messages). Item keys: `chatId`, `name`, `type`, `phoneNumber`, `unreadCount`, `lastMessage`.
 - `phoneNumber` is `0` for groups, channels, bots, **and** personal chats with a hidden number. It is a number when set.
