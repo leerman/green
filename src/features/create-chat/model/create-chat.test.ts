@@ -75,7 +75,14 @@ describe('createChat', () => {
     const api = login(async () => ({ exist: true, chatId: '10001' }))
     expect(await createChat('+7 999 123 45 67')).toEqual({ ok: true, chatId: '10001' })
     expect(api.checkAccount).toHaveBeenCalledWith(79991234567)
-    expect(chats().chats['10001']).toEqual({ chatId: '10001', title: '+79991234567', phone: '79991234567', messages: [] })
+    expect(chats().chats['10001']).toEqual({
+      chatId: '10001',
+      title: '+79991234567',
+      phone: '79991234567',
+      type: 'user',
+      history: 'idle',
+      messages: [],
+    })
     expect(chats().activeChatId).toBe('10001')
   })
 })
