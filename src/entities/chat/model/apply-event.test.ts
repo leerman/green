@@ -33,7 +33,14 @@ describe('chatCreated', () => {
   it('adds a chat to the top of the list', () => {
     const s = run([created('1'), created('2', { phone: '79991234567' })])
     expect(s.order).toEqual(['2', '1'])
-    expect(s.chats['2']).toEqual({ chatId: '2', title: 'Chat 2', phone: '79991234567', messages: [] })
+    expect(s.chats['2']).toEqual({
+      chatId: '2',
+      title: 'Chat 2',
+      phone: '79991234567',
+      type: 'user',
+      history: 'idle',
+      messages: [],
+    })
   })
 
   it('does not duplicate an existing chat', () => {
@@ -141,5 +148,37 @@ describe('incomingReceived', () => {
     const snapshot = structuredClone(s1)
     run([incoming('1', 'b', 200), incoming('2', 'c', 300)], s1)
     expect(s1).toEqual(snapshot)
+  })
+})
+
+describe('chat type and history state', () => {
+  it('infers the type from the chatId', () => {
+    const s = run([
+      created('42'),
+      incoming('-100', 'g1', 1),
+      { type: 'outgoingReceived', chatId: '-200', idMessage: 'o1', text: 'hi', ts: 2, title: 'Team' },
+    ])
+    expect(s.chats['42'].type).toBe('user')
+    expect(s.chats['-100'].type).toBe('group')
+    expect(s.chats['-200'].type).toBe('group')
+  })
+
+  it('uses an explicit chat type over the inferred one', () => {
+    const s = run([created('-1', { chatType: 'channel' }), incoming('7', 'm1', 1, { chatType: 'bot' })])
+    expect(s.chats['-1'].type).toBe('channel')
+    expect(s.chats['7'].type).toBe('bot')
+  })
+
+  it('starts every chat with history not loaded', () => {
+    const s = run([created('1'), incoming('2', 'm1', 1)])
+    expect(s.chats['1'].history).toBe('idle')
+    expect(s.chats['2'].history).toBe('idle')
+  })
+
+  it('keeps the sender of an incoming group message', () => {
+    const sender = { id: '555', name: 'Bob' }
+    const s = run([incoming('-100', 'g1', 1, { sender }), incoming('-100', 'g2', 2)])
+    expect(s.chats['-100'].messages[0].sender).toEqual(sender)
+    expect(s.chats['-100'].messages[1]).not.toHaveProperty('sender')
   })
 })

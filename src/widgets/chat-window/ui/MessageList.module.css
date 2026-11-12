@@ -25,3 +25,18 @@
   flex: none;
   height: 12px;
 }
+
+.day {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 6px;
+}
+
+.day span {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}

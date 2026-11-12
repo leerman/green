@@ -1,4 +1,4 @@
-import type { ChatEvent } from '@/entities/chat'
+import { inferChatType, type ChatEvent } from '@/entities/chat'
 import type { NotificationBody } from '@/shared/api'
 import { normalizePhone } from '@/shared/lib/phone'
 
@@ -35,7 +35,7 @@ function readPhone(value: unknown): string | undefined {
 /**
  * Converts a GREEN-API notification into a chat event, or `null` to ignore it.
  * Ignored: notifications from before login, non-message webhooks, non-text messages,
- * group chats, and anything with missing fields.
+ * and anything with missing fields. Group chats are passed on with the message sender.
  */
 export function mapNotification(body: unknown, loginAt: number): ChatEvent | null {
   if (typeof body !== 'object' || body === null) return null
@@ -56,13 +56,22 @@ export function mapNotification(body: unknown, loginAt: number): ChatEvent | nul
   if (text === undefined) return null
 
   const chatId = nonEmptyString(b.senderData?.chatId)
-  if (chatId === undefined || chatId.startsWith('-')) return null
+  if (chatId === undefined) return null
 
   const idMessage = nonEmptyString(b.idMessage)
   if (idMessage === undefined) return null
 
   if (b.typeWebhook === 'incomingMessageReceived') {
     const s = b.senderData!
+    if (inferChatType(chatId) === 'group') {
+      // In a group the chat is named after the group; the author goes on the message.
+      // The sender's phone is not the chat's, so the chat gets none.
+      const title = nonEmptyString(s.chatName) ?? chatId
+      const senderId = nonEmptyString(s.sender)
+      const name = nonEmptyString(s.senderContactName) ?? nonEmptyString(s.senderName)
+      const sender = senderId ? { id: senderId, ...(name ? { name } : {}) } : undefined
+      return { type: 'incomingReceived', chatId, idMessage, text, ts, title, ...(sender ? { sender } : {}) }
+    }
     const title =
       nonEmptyString(s.senderContactName) ?? nonEmptyString(s.senderName) ?? nonEmptyString(s.chatName) ?? chatId
     const phone = readPhone(s.senderPhoneNumber)

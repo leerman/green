@@ -91,7 +91,8 @@ describe('poller', () => {
       'receive', 'delete:6',
       'receive',
     ])
-    expect(events.map((e) => e.type === 'incomingReceived' && e.idMessage)).toEqual(['A', 'B'])
+    // Group messages are passed on; service, old, and broken notifications are not.
+    expect(events.map((e) => e.type === 'incomingReceived' && e.idMessage)).toEqual(['A', 'G', 'B'])
     poller.stop()
   })
 

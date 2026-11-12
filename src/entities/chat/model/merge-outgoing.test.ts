@@ -110,6 +110,8 @@ describe('merging outgoing copies', () => {
     expect(s2.chats['999']).toEqual({
       chatId: '999',
       title: 'Favorites',
+      type: 'user',
+      history: 'idle',
       messages: [{ id: 'X', direction: 'out', content: { type: 'text', text: 'note to self' }, timestamp: 7, status: 'sent' }],
     })
     // Repeated delivery does not add a copy.

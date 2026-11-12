@@ -24,3 +24,16 @@
   border-radius: 999px;
   background: var(--color-bg);
 }
+
+.history {
+  margin: 8px 16px 0;
+}
+
+.readOnly {
+  padding: 14px 16px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  text-align: center;
+}

@@ -107,8 +107,55 @@ describe('mapNotification', () => {
     },
   )
 
-  it('ignores a group chat', () => {
-    expect(mapNotification(incoming({ senderData: { chatId: '-100200300', senderName: 'G' } }), LOGIN_AT)).toBeNull()
+  it('maps an incoming group message with the group title and the sender', () => {
+    const body = incoming({
+      senderData: {
+        chatId: '-100200300',
+        chatName: 'Team',
+        sender: '156353012',
+        senderName: 'Kate',
+        senderContactName: '',
+        senderPhoneNumber: 79995554433,
+      },
+    })
+    expect(mapNotification(body, LOGIN_AT)).toEqual({
+      type: 'incomingReceived',
+      chatId: '-100200300',
+      idMessage: 'IN1',
+      text: 'hello',
+      ts: TS * 1000,
+      title: 'Team',
+      sender: { id: '156353012', name: 'Kate' },
+    })
+  })
+
+  it('prefers the contact name for a group sender and falls back to the chatId for the title', () => {
+    const body = incoming({
+      senderData: { chatId: '-1', sender: '7', senderName: 'Kate', senderContactName: 'Katya' },
+    })
+    expect(mapNotification(body, LOGIN_AT)).toMatchObject({ title: '-1', sender: { id: '7', name: 'Katya' } })
+  })
+
+  it('maps a group message without sender data without a sender', () => {
+    const event = mapNotification(incoming({ senderData: { chatId: '-1', chatName: 'Team' } }), LOGIN_AT)
+    expect(event).toMatchObject({ type: 'incomingReceived', chatId: '-1', title: 'Team' })
+    expect(event).not.toHaveProperty('sender')
+  })
+
+  it('maps an outgoing message from the phone to a group', () => {
+    const body = { ...outgoing('outgoingMessageReceived'), senderData: { chatId: '-100200300', chatName: 'Team' } }
+    expect(mapNotification(body, LOGIN_AT)).toEqual({
+      type: 'outgoingReceived',
+      chatId: '-100200300',
+      idMessage: 'OUT1',
+      text: 'hi',
+      ts: TS * 1000,
+      title: 'Team',
+    })
+  })
+
+  it('attaches no sender to a personal chat message', () => {
+    expect(mapNotification(incoming(), LOGIN_AT)).not.toHaveProperty('sender')
   })
 
   it('ignores notifications from before login, beyond the clock-skew margin', () => {

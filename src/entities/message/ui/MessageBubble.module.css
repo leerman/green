@@ -36,6 +36,17 @@
   background: color-mix(in srgb, var(--color-bubble-out) 55%, white);
 }
 
+.sender {
+  margin-bottom: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--color-accent);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .text {
   white-space: pre-wrap;
 }

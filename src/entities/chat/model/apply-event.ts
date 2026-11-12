@@ -1,6 +1,22 @@
 import type { Message } from '@/entities/message/@x/chat'
-import type { ChatEvent } from './events'
-import type { Chat, ChatsState } from './types'
+import type { ChatEvent, LoadedChat } from './events'
+import type { Chat, ChatsState, ChatType, HistoryState } from './types'
+
+/** Group chat IDs are negative numbers in MAX; everything else is treated as personal. */
+export function inferChatType(chatId: string): ChatType {
+  return chatId.startsWith('-') ? 'group' : 'user'
+}
+
+function newChat(chatId: string, title: string, chatType: ChatType | undefined, extra: Partial<Chat> = {}): Chat {
+  return {
+    chatId,
+    title: title || chatId,
+    type: chatType ?? inferChatType(chatId),
+    history: 'idle',
+    messages: [],
+    ...extra,
+  }
+}
 
 function moveToTop(order: string[], chatId: string): string[] {
   return [chatId, ...order.filter((id) => id !== chatId)]
@@ -36,6 +52,54 @@ function updateMessage(
   return updateChat(state, { ...chat, messages }, { toTop: false })
 }
 
+function mergeLoadedChats(state: ChatsState, loaded: LoadedChat[]): ChatsState {
+  const chats = { ...state.chats }
+  const appended: string[] = []
+  let changed = false
+  for (const item of loaded) {
+    const existing = chats[item.chatId]
+    if (!existing) {
+      const messages = item.lastMessage ? [item.lastMessage] : []
+      chats[item.chatId] = newChat(item.chatId, item.title, item.chatType, { phone: item.phone, messages })
+      appended.push(item.chatId)
+      changed = true
+      continue
+    }
+    const phone = existing.phone ?? item.phone
+    const last = item.lastMessage
+    const addLast = last !== undefined && !existing.messages.some((m) => m.id === last.id)
+    if (existing.type === item.chatType && existing.phone === phone && !addLast) continue
+    chats[item.chatId] = {
+      ...existing,
+      type: item.chatType,
+      phone,
+      messages: addLast ? insertByTimestamp(existing.messages, last) : existing.messages,
+    }
+    changed = true
+  }
+  if (!changed) return state
+  return { ...state, chats, order: [...state.order, ...appended] }
+}
+
+function setHistory(state: ChatsState, chatId: string, history: HistoryState): ChatsState {
+  const chat = state.chats[chatId]
+  if (!chat || chat.history === history) return state
+  return updateChat(state, { ...chat, history }, { toTop: false })
+}
+
+function mergeHistory(state: ChatsState, chatId: string, history: Message[]): ChatsState {
+  const chat = state.chats[chatId]
+  if (!chat) return state
+  const known = new Set(chat.messages.map((m) => m.id))
+  let messages = chat.messages
+  for (const message of history) {
+    if (known.has(message.id)) continue
+    known.add(message.id)
+    messages = insertByTimestamp(messages, message)
+  }
+  return updateChat(state, { ...chat, messages, history: 'loaded' }, { toTop: false })
+}
+
 export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
   switch (event.type) {
     case 'chatCreated': {
@@ -44,12 +108,7 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
         if (existing.phone || !event.phone) return state
         return updateChat(state, { ...existing, phone: event.phone }, { toTop: false })
       }
-      const chat: Chat = {
-        chatId: event.chatId,
-        title: event.title || event.chatId,
-        phone: event.phone,
-        messages: [],
-      }
+      const chat = newChat(event.chatId, event.title, event.chatType, { phone: event.phone })
       return updateChat(state, chat, { toTop: true })
     }
 
@@ -86,15 +145,11 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
         direction: 'in',
         content: { type: 'text', text: event.text },
         timestamp: event.ts,
+        ...(event.sender ? { sender: event.sender } : {}),
       }
       const existing = state.chats[event.chatId]
       if (!existing) {
-        const chat: Chat = {
-          chatId: event.chatId,
-          title: event.title || event.chatId,
-          phone: event.phone,
-          messages: [message],
-        }
+        const chat = newChat(event.chatId, event.title, event.chatType, { phone: event.phone, messages: [message] })
         return updateChat(state, chat, { toTop: true })
       }
       if (existing.messages.some((m) => m.id === event.idMessage)) return state
@@ -122,14 +177,24 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
       }))
     }
 
+    case 'chatsLoaded':
+      return mergeLoadedChats(state, event.chats)
+
+    case 'historyRequested':
+      return setHistory(state, event.chatId, 'loading')
+
+    case 'historyLoaded':
+      return mergeHistory(state, event.chatId, event.messages)
+
+    case 'historyFailed':
+      return setHistory(state, event.chatId, 'error')
+
     case 'outgoingReceived': {
       const chat = state.chats[event.chatId]
       if (!chat) {
         // Sent from another device to a chat that is not in the list yet
         // (e.g. to yourself in Favorites): create it.
-        const created: Chat = {
-          chatId: event.chatId,
-          title: event.title || event.chatId,
+        const created = newChat(event.chatId, event.title, event.chatType, {
           messages: [
             {
               id: event.idMessage,
@@ -139,7 +204,7 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
               status: 'sent',
             },
           ],
-        }
+        })
         return updateChat(state, created, { toTop: true })
       }
       const existing = chat.messages.find((m) => m.id === event.idMessage)

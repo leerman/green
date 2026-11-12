@@ -101,3 +101,49 @@ export interface ReceiveNotificationOptions {
   receiveTimeout: number
   signal?: AbortSignal
 }
+
+export type ChatType = 'user' | 'group' | 'channel' | 'bot' | (string & {})
+
+/** One item of `getChats`. Fields are optional: the MAX payload is only partly documented. */
+export interface GetChatsItem {
+  chatId?: string
+  name?: string
+  type?: ChatType
+  /** `0` when the number is hidden or the chat is a group. */
+  phoneNumber?: number | string
+  unreadCount?: number
+  /** Not in the docs; seen on a real instance. Same shape as a history item. */
+  lastMessage?: ChatHistoryItem
+  [key: string]: unknown
+}
+
+export type GetChatsResponse = GetChatsItem[]
+
+export interface GetChatHistoryRequest {
+  chatId: string
+  count: number
+}
+
+/** One message of `getChatHistory`. Newest first. Parse defensively. */
+export interface ChatHistoryItem {
+  type?: 'incoming' | 'outgoing' | (string & {})
+  idMessage?: string
+  /** UNIX time in seconds. */
+  timestamp?: number
+  typeMessage?: string
+  chatId?: string
+  textMessage?: string
+  extendedTextMessage?: { text?: string; [key: string]: unknown }
+  statusMessage?: string
+  senderId?: string
+  senderName?: string
+  senderContactName?: string
+  isDeleted?: boolean
+  [key: string]: unknown
+}
+
+export type GetChatHistoryResponse = ChatHistoryItem[]
+
+export interface RequestOptions {
+  signal?: AbortSignal
+}
