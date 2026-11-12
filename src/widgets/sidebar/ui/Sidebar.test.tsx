@@ -1,24 +1,12 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { StateCreator } from 'zustand/vanilla'
 import { useChatsStore } from '@/entities/chat'
 import { useSessionStore } from '@/entities/session'
 import { useChatListStore } from '@/features/load-chats'
 import { Sidebar } from './Sidebar'
 
-// Server rendering reads a zustand store's initial state, not its current one. These
-// stores render their current state instead, so the markup reflects setState calls.
-vi.mock('zustand', async () => {
-  const { useSyncExternalStore } = await import('react')
-  const { createStore } = await import('zustand/vanilla')
-  const createLive = (init: StateCreator<unknown>) => {
-    const api = createStore(init)
-    const useLive = (selector: (s: unknown) => unknown = (s) => s) =>
-      useSyncExternalStore(api.subscribe, () => selector(api.getState()), () => selector(api.getState()))
-    return Object.assign(useLive, api)
-  }
-  return { create: (init?: StateCreator<unknown>) => (init ? createLive(init) : createLive) }
-})
+// Render the stores' current state (see __mocks__/zustand.ts).
+vi.mock('zustand')
 
 const render = () => renderToStaticMarkup(<Sidebar />)
 

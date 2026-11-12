@@ -8,17 +8,20 @@ export function MessageList({ chat }: { chat: Chat }) {
   const endRef = useRef<HTMLDivElement>(null)
   const count = chat.messages.length
   const lastId = chat.messages.at(-1)?.id
+  const historyLoaded = chat.history === 'loaded'
+  const showSender = chat.type === 'group'
 
-  // Scroll when the newest message changes or another chat is opened. Removing
-  // a merged local copy elsewhere in the list leaves the newest one unchanged.
+  // Scroll when the newest message changes, another chat is opened, or the history
+  // arrives (it may only add older messages). Removing a merged local copy elsewhere
+  // in the list leaves the newest one unchanged.
   useLayoutEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
-  }, [chat.chatId, lastId])
+  }, [chat.chatId, lastId, historyLoaded])
 
   return (
     <div className={styles.list} role="log" aria-live="polite" aria-label={`Messages with ${chat.title}`}>
       {count === 0 ? (
-        <p className={styles.empty}>No messages yet</p>
+        chat.history !== 'loading' && <p className={styles.empty}>No messages yet</p>
       ) : (
         <>
           <div className={styles.spacer} />
@@ -26,6 +29,7 @@ export function MessageList({ chat }: { chat: Chat }) {
             <MessageBubble
               key={m.id}
               message={m}
+              showSender={showSender}
               actions={
                 m.direction === 'out' && m.status === 'failed' ? (
                   <RetryButton chatId={chat.chatId} messageId={m.id} />
