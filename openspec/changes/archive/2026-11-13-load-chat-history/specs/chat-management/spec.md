@@ -96,15 +96,15 @@ When a message arrives in a chat with a `chatId` that is not in the list, the sy
 - **THEN** a new chat titled with the chat name, or `chatId` when there is none, appears in the list with that message as outgoing, and the active chat does not change
 
 ### Requirement: Chat list
-The system SHALL show the list of chats in the sidebar. The order SHALL start from the server's activity order, and a chat SHALL move to the top when a message arrives in it or is sent to it. Each item SHALL show the chat title and, when the chat has messages, the text of the latest one and when it was sent: the time (`HH:MM`) for today, "Yesterday", the day and short month (for example "12 Nov") for earlier dates in the current year, or day, short month, and year (for example "28 Dec 2025") for earlier years.
+The system SHALL show the list of chats in the sidebar. The order SHALL start from the server's activity order, and a chat SHALL move to the top when a message arrives in it or is sent to it. Each item SHALL show the chat title and, when the chat has messages, the text of the latest one and when it was sent: the time (`HH:MM`) for today, or "Yesterday" or a short date for earlier days.
 
 #### Scenario: New message moves the chat up
 - **WHEN** a message arrives in or is sent to a chat that is not at the top of the list
 - **THEN** that chat moves to the top of the list
 
 #### Scenario: Date of the latest message
-- **WHEN** the latest messages of three chats were sent today at 09:15, yesterday, and on 12 November of the current year
-- **THEN** their items show "09:15", "Yesterday", and "12 Nov"
+- **WHEN** the latest messages of four chats were sent today at 09:15, yesterday, on 12 November of the current year, and on 28 December of the previous year
+- **THEN** their items show "09:15", "Yesterday", "12 Nov", and "28 Dec" followed by that year
 
 #### Scenario: Chat without messages
 - **WHEN** a chat in the list has no text messages in the app yet
