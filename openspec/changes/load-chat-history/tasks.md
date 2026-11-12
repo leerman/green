@@ -3,7 +3,7 @@
 ## 1. API client
 
 - [x] 1.1 Add `getChats({ signal })` and `getChatHistory(chatId, count, { signal })` to `GreenApi` in `shared/api/green-api/client.ts`, with all-optional response types in `types.ts` (design D1); verify with client tests against a mock axios adapter: correct method, URL, and body, the signal is passed, and an error leaves no token in the `ApiError`
-- [ ] 1.2 On a real instance (through a temporary script or the dev console), call `getChats` without `count` and `getChatHistory` for a personal chat and a group; record in design.md Open Questions whether `getChats` returns every chat, the actual history fields for text, link-preview, reaction, and deleted messages, `senderId`/`senderName` in groups, and the group `chatId` prefix; use the result in tasks 3.1–3.2 and 4.1
+- [x] 1.2 On a real instance (through a temporary script or the dev console), call `getChats` without `count` and `getChatHistory` for a personal chat and a group; record in design.md Open Questions whether `getChats` returns every chat, the actual history fields for text, link-preview, reaction, and deleted messages, `senderId`/`senderName` in groups, and the group `chatId` prefix; use the result in tasks 3.1–3.2 and 4.1
 
 ## 2. Chat and message model
 

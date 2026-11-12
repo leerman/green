@@ -119,5 +119,16 @@ No data migration: state is in memory only. Deploying replaces the static bundle
 
 ## Open Questions
 
-- Does `getChats` without `count` return every chat on a real MAX instance, and in what order relative to the MAX app? (Checked in the real-instance task. Only the `count` argument depends on it.)
-- Do MAX group `chatId`s always start with `-`, and do channel notifications use the same prefix? (Affects only the inferred `type` before `getChats` responds.)
+- ~~Does `getChats` without `count` return every chat?~~ Checked on a real instance on 2026-11-14 (task 1.2): it returned 28 chats (18 user, 4 group, 2 channel, 4 bot), sorted by latest activity. `getChats` is called without `count`.
+- ~~Do MAX group `chatId`s always start with `-`?~~ Yes, and so do channel `chatId`s. User and bot `chatId`s are positive. A channel created from a live notification is therefore inferred as `group` until `getChats` reports it (see Risks).
+
+### Real-instance findings (task 1.2, 2026-11-14)
+
+- **`getChats` items also carry `lastMessage`** (not in the docs): a full history item (same shape as `getChatHistory`) or absent (seen on a bot with no messages). Item keys: `chatId`, `name`, `type`, `phoneNumber`, `unreadCount`, `lastMessage`.
+- `phoneNumber` is `0` for groups, channels, bots, **and** personal chats with a hidden number. It is a number when set.
+- History items carry `chatType` (`user` / `group` / `channel`) and, for incoming messages, `senderId`, `senderName`, `senderType`, and `senderContactName`. **`senderContactName` is often `""`**, so name fallbacks must skip empty strings, not just `undefined`.
+- `extendedTextMessage` items have **both** `textMessage` and `extendedTextMessage.text` (same value). Reading `textMessage` first, then `extendedTextMessage.text`, covers both types.
+- Edits appear as a separate item with `typeMessage: 'editedMessage'` and `editedMessageData: { stanzaId, textMessage }`. The original item has `isEdited: true`. The type filter skips the `editedMessage` items. Whether the original text item shows the edited text was not observed (only an edited image caption was seen).
+- No `reactionMessage` or deleted item was present in the sampled chats. The mapper handles them as documented (type filter, `isDeleted`).
+- In channels, incoming messages have `senderId` equal to the channel `chatId` and `senderType: 'channel'`. The sampled channel contained only images.
+- **`getChatHistory` is rate limited tightly:** a second call about a second after the first returned **HTTP 429**. Calls 5 s apart succeeded. The client maps 429 to `ApiError` kind `limit`.
