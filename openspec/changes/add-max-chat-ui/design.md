@@ -87,6 +87,7 @@ Slice notes:
 Supporting tools:
 - The `@/` alias points to `src/` in `tsconfig` and `vite.config`.
 - **Steiger**, the official FSD linter, checks layer boundaries, public APIs, and cross-imports. It runs as `npm run lint:fsd` and is part of the verification for every task group.
+- Steiger uses `fsd.configs.recommended` with one exception: `fsd/insignificant-slice` is turned off in `steiger.config.ts`. That rule asks to merge any slice that has only one consumer. In this layout, single-consumer slices are intentional: each widget belongs to one page (`sidebar` and `chat-window` → `messenger`), and each feature belongs to one widget or page (`auth` → `login`, `create-chat` and `logout` → `sidebar`, `send-message` → `chat-window`). Merging them would erase the feature and widget boundaries this design relies on. The rules this design depends on (layer boundaries, public APIs, cross-imports) stay on. Revisit if the slice layout changes.
 
 Alternative: plain layers (`api/domain/store/components`). They were rejected at the user's request. FSD makes boundaries explicit and checks them with a linter, at the cost of more folders.
 
@@ -137,19 +138,19 @@ Domain events (`entities/chat/model/events.ts`):
 | `messageSent {chatId, tmpId, idMessage}` | sendMessage response | see D5 |
 | `messageFailed {chatId, tmpId}` | sendMessage error | status `failed` |
 | `incomingReceived {chatId, idMessage, text, ts, title, phone?}` | features/receive-notifications | auto-creates the chat; ignores a duplicate `idMessage` |
-| `outgoingReceived {chatId, idMessage, text, ts}` | features/receive-notifications | see D5; ignored for an unknown chat |
+| `outgoingReceived {chatId, idMessage, text, ts, title}` | features/receive-notifications | see D5; auto-creates the chat |
 
 Any event with a message moves its chat to the top of `order`.
 
 ### D4. Mapping notifications: `mapNotification(body, loginAt) => ChatEvent | null`
 
 A pure function in `features/receive-notifications/lib/map-notification.ts`. It returns `null` (ignore) when any of these is true:
-- `body.timestamp * 1000 < loginAt`
+- `body.timestamp < floor(loginAt / 1000) - 30`: the timestamp is whole seconds on the server clock and `loginAt` is ms on the client clock, so the comparison is in seconds with a 30 s allowance for clock skew. A message dropped here is also deleted from the queue, so the filter errs toward showing a message from just before login rather than losing one from just after.
 - `typeWebhook` is not one of `incomingMessageReceived`, `outgoingAPIMessageReceived`, or `outgoingMessageReceived`
-- `messageData.typeMessage !== "textMessage"` or the text is missing
+- `messageData.typeMessage` is not `textMessage` or `extendedTextMessage` (text with a link preview), or the text is missing
 - `senderData.chatId` is missing or starts with `-` (group)
 
-Fields: `incomingMessageReceived` → `incomingReceived` with title `senderContactName || senderName || chatName || chatId` and `phone = String(senderPhoneNumber)` when present. Both outgoing types → `outgoingReceived`. For outgoing notifications, the text field must be checked against real data (see Open Questions). The function reads it defensively from `textMessageData.textMessage` or `extendedTextMessageData.text`.
+Fields: `incomingMessageReceived` → `incomingReceived` with title `senderContactName || senderName || chatName || chatId` and `phone = String(senderPhoneNumber)` when present. Both outgoing types → `outgoingReceived` with title `chatName || chatId` (the sender is the instance itself, so there is no recipient phone). For outgoing notifications, the text field must be checked against real data (see Open Questions). The function reads it defensively from `textMessageData.textMessage` or `extendedTextMessageData.text`.
 
 ### D5. Merging outgoing copies
 
@@ -161,8 +162,9 @@ messageSent {tmpId, idMessage}:
   else                                              -> tmp.id = idMessage, status = "sent"
 
 outgoingReceived {idMessage, ...}:
-  if chat unknown                                   -> ignore
-  if chat contains id == idMessage                  -> replace with the server copy (status "sent")
+  if chat unknown                                   -> create the chat with this message
+  if chat contains id == idMessage                  -> replace with the server copy (status "sent",
+                                                       server timestamp, re-sorted)
   else                                              -> append as a new outgoing message
 ```
 
@@ -185,7 +187,7 @@ loop until aborted:
     backoff.reset(); session.setConnection("online")
   catch (e):
     if aborted: break
-    if backoff.attempts >= 3: session.setConnection("reconnecting")
+    if backoff.attempts + 1 >= 3: session.setConnection("reconnecting")   // from the 3rd failure in a row
     await sleep(backoff.next(), signal)         // 1, 2, 5, 10, 10, ... s
 ```
 
@@ -201,7 +203,7 @@ A generation guard (`runId`) stops a loop from a previous session from writing t
 - Each URL is built as `/waInstance${id}/${method}/${token}`. The token exists only inside the client closure.
 - `receiveNotification` uses its own `timeout = (receiveTimeout + 10) * 1000`. Otherwise axios would abort normal long polling.
 - An empty response (`null` or `""`) becomes `null`.
-- A response interceptor converts any `AxiosError` into `ApiError { kind, status?, message }` (`errors.ts`) with `kind: "auth" | "limit" | "network" | "server" | "validation" | "canceled"`. The original error, which contains `config.url` with the token, is not passed on. Mapping: 401/403 → auth, 469 → limit, 4xx → validation, 5xx → server, no response → network, `CanceledError` → canceled.
+- A response interceptor converts any `AxiosError` into `ApiError { kind, status?, message }` (`errors.ts`) with `kind: "auth" | "limit" | "network" | "server" | "validation" | "canceled"`. The original error, which contains `config.url` with the token, is not passed on. Mapping: 401/403 → auth, 469/429 → limit, 4xx → validation, 5xx → server, no response → network, `CanceledError` → canceled.
 - The app has no `console.*` with request data.
 - `shared/api` knows nothing about entities. It returns GREEN-API types (`types.ts`).
 
@@ -216,7 +218,8 @@ login(id, token):
   state = await api.getStateInstance()        // ApiError auth -> "Invalid credentials"
   if state !== "authorized" -> session.setError(state)
   settings = await api.getSettings()          // on error: a warning, not a block
-  warnings = checkSettings(settings)          // lib: webhookUrl != "", incomingWebhook != "yes"
+  warnings = checkSettings(settings)          // lib: webhookUrl != "", incomingWebhook != "yes",
+                                              //      outgoing(API)MessageWebhook != "yes"
   session.setReady({ api, loginAt: Date.now(), warnings })
   // the poller is started by app/session-lifecycle in reaction to status === "ready"
 ```
@@ -254,7 +257,7 @@ Layout like web.max.ru (`pages/messenger`): a left sidebar about 320 px wide (`w
 Vitest. Tests sit next to the code inside each slice (`*.test.ts`). The domain needs no jsdom:
 - `shared/lib/phone`: formatting (`+`, spaces, brackets, hyphens), numbers from different countries, 7/15-digit boundaries, invalid input.
 - `shared/api/green-api`: `ApiError` mapping, no token in errors.
-- `entities/chat`: both orders of `messageSent`/`outgoingReceived`, repeated delivery, retry, auto-creation, ignoring an unknown chat for outgoing messages, sorting, `reset`.
+- `entities/chat`: both orders of `messageSent`/`outgoingReceived`, repeated delivery, retry, auto-creation, auto-creation for incoming and outgoing messages, sorting, `reset`.
 - `features/receive-notifications`: `mapNotification` (every webhook type, groups, old timestamps, broken format); poller with fake timers.
 - `features/auth`, `features/create-chat`, `features/send-message`: model functions against a mock API.
 - `app/model/session-lifecycle`: `ready` → start, `clear` → stop + reset.

@@ -33,7 +33,7 @@ On login, the system SHALL request the instance state. It SHALL allow login only
 - **THEN** the system stays on the login screen and reports a connection error
 
 ### Requirement: Notification settings check on login
-After a successful state check, the system SHALL request the instance settings. If they prevent receiving messages over the HTTP API, the system SHALL warn the user and say which settings to change. The warning SHALL NOT block login.
+After a successful state check, the system SHALL request the instance settings. If they prevent receiving messages over the HTTP API, including notifications about outgoing messages, the system SHALL warn the user and say which settings to change. The warning SHALL NOT block login.
 
 #### Scenario: webhookUrl is set
 - **WHEN** the instance settings have a non-empty `webhookUrl`
@@ -43,8 +43,12 @@ After a successful state check, the system SHALL request the instance settings. 
 - **WHEN** the instance settings have `incomingWebhook` set to anything other than `yes`
 - **THEN** the system shows a warning that incoming notifications must be enabled
 
+#### Scenario: Outgoing notifications disabled
+- **WHEN** the instance settings have `outgoingMessageWebhook` or `outgoingAPIMessageWebhook` set to anything other than `yes`
+- **THEN** the system shows one warning that names the disabled settings and says that messages sent from the phone will not appear until they are enabled
+
 #### Scenario: Settings are correct
-- **WHEN** `webhookUrl` is empty and `incomingWebhook` is `yes`
+- **WHEN** `webhookUrl` is empty and `incomingWebhook`, `outgoingMessageWebhook`, and `outgoingAPIMessageWebhook` are `yes`
 - **THEN** the system shows no warnings
 
 ### Requirement: Session state in memory only

@@ -1,0 +1,43 @@
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.counter {
+  position: absolute;
+  right: 12px;
+  bottom: -14px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.limit {
+  color: var(--color-danger);
+}
+
+.send {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.error {
+  position: absolute;
+  left: 14px;
+  bottom: -15px;
+  font-size: 11px;
+  color: var(--color-danger);
+}

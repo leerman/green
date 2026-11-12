@@ -1,0 +1,26 @@
+.window {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  background: var(--color-bg);
+}
+
+.placeholder {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.placeholder p {
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--color-bg);
+}

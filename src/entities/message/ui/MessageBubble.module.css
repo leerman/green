@@ -1,0 +1,81 @@
+.row {
+  display: flex;
+  padding: 2px 0;
+}
+
+.in {
+  justify-content: flex-start;
+}
+
+.out {
+  justify-content: flex-end;
+}
+
+.bubble {
+  position: relative;
+  max-width: min(75%, 560px);
+  padding: 7px 12px 6px;
+  border-radius: var(--radius-lg);
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.in .bubble {
+  background: var(--color-bubble-in);
+  color: var(--color-text);
+  border-bottom-left-radius: 6px;
+}
+
+.out .bubble {
+  background: var(--color-bubble-out);
+  color: var(--color-bubble-out-text);
+  border-bottom-right-radius: 6px;
+}
+
+.out.failed .bubble {
+  background: color-mix(in srgb, var(--color-bubble-out) 55%, white);
+}
+
+.text {
+  white-space: pre-wrap;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 14px;
+  opacity: 0.75;
+}
+
+.status {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+}
+
+.failedIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.failedLabel {
+  color: inherit;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}

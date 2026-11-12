@@ -62,11 +62,11 @@ The system SHALL identify outgoing messages by `idMessage`. When GREEN-API repor
 - **THEN** the chat does not change
 
 ### Requirement: Show messages sent from other devices
-The system SHALL show outgoing text messages that the user sent to a known chat from a phone or another client as outgoing messages in that chat.
+The system SHALL show outgoing text messages that the user sent to a personal chat from a phone or another client as outgoing messages in that chat, creating the chat if it is not in the list.
 
 #### Scenario: Message from a phone
-- **WHEN** a notification arrives about an outgoing text message sent from another device to a chat in the list
-- **THEN** the message appears in the chat as outgoing
+- **WHEN** a notification arrives about an outgoing text message sent from another device
+- **THEN** the message appears in that chat as outgoing
 
 ### Requirement: Show incoming messages
 The system SHALL add an incoming text message to the chat with the matching `chatId` and show it as an incoming bubble with the time.
