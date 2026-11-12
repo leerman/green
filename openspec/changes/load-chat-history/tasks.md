@@ -28,7 +28,7 @@
 ## 5. Wiring and UI
 
 - [x] 5.1 Start `chatListLoader` next to `poller.start` and call `chatListLoader.stop()` and `stopHistory()` next to `poller.stop` in `app/model/session-lifecycle.ts`; verify by extending `session-lifecycle.test.ts`: login starts the loader, logout stops both loaders, and a second login starts a fresh load
-- [ ] 5.2 In `widgets/sidebar`, render `ChatListStatus`: "Loading chats..." in place of the empty prompt while loading with no chats, and an error banner with Retry that keeps the list and create-chat form usable; verify manually in `npm run dev` with the network throttled and blocked
+- [x] 5.2 In `widgets/sidebar`, render `ChatListStatus`: "Loading chats..." in place of the empty prompt while loading with no chats, and an error banner with Retry that keeps the list and create-chat form usable; verify manually in `npm run dev` with the network throttled and blocked
 - [ ] 5.3 In `widgets/chat-window`: an effect keyed on `chatId` calls `loadHistory` when `history` is `idle` or `error`; render `HistoryStatus`; set `showSender` for group chats in `MessageList`; scroll to the newest message after history loads; replace `MessageInput` with a "Read-only channel" footer for channels (design D4, D7); verify manually: first open loads once, reopening a loaded chat sends no request, a blocked request shows Retry and reopening retries, a channel shows the footer, and `npm run lint:fsd` passes
 
 ## 6. Documentation and integration check
