@@ -29,7 +29,7 @@
 - [x] 4.2 Implement `features/logout` (`LogoutButton` → `session.clear()`); verify with `npm run lint:fsd` and a manual click in `npm run dev`
 - [x] 4.3 Implement `features/create-chat`: `model/create-chat.ts` (design D9) and `ui/CreateChatForm` (inline form, errors); verify with tests against a mock API: invalid number without a request, existing chat without `checkAccount`, `exist:false`, API validation error, 469, `status:false`, existing `chatId`, success
 - [x] 4.4 Implement `features/send-message`: `model/send-message.ts` (`sendMessage`, `retry`), `ui/MessageInput` (auto-growing textarea, Enter/Shift+Enter, block empty input, 4000-character limit, clear after sending), and `ui/RetryButton`; verify with tests against a mock API (success, error → `failed`, retry → one copy) and manually against the "Message input validation" scenarios
-- [ ] 4.5 Check on a real instance (manually, through a temporary script or the dev console) that `idMessage` from `sendMessage` matches `idMessage` in `outgoingAPIMessageReceived`, and record which text field outgoing notifications use; record the result in design.md Open Questions and use it in task 4.6
+- [x] 4.5 Check on a real instance (manually, through a temporary script or the dev console) that `idMessage` from `sendMessage` matches `idMessage` in `outgoingAPIMessageReceived`, and record which text field outgoing notifications use; record the result in design.md Open Questions and use it in task 4.6
 - [x] 4.6 Implement `features/receive-notifications/lib`: `mapNotification` (design D4, accounting for the result of task 4.5) and `backoff`; verify with tests for every webhook type, groups, old timestamps, broken format, and the backoff sequence/reset
 - [x] 4.7 Implement `features/receive-notifications/model/poller.ts` (design D6): one loop, `AbortController`, dispatch then `deleteWithRetry`, `runId` guard, `session.setConnection`; and `ui/ConnectionStatus`; verify with Vitest using fake timers and a fake API: every notification is removed, `stop()` stops requests, the delay grows and resets, and a stale loop does not dispatch
 
@@ -43,7 +43,7 @@
 ## 6. Documentation and integration check
 
 - [x] 6.1 Write `README.md`: what the app does, instance requirements (empty `webhookUrl`, `incomingWebhook` enabled), `.env` setup, `npm` commands, an FSD structure overview, limitations (text only, one tab per instance, the token is visible in Network); verify that following the README you can start the project from scratch
-- [ ] 6.2 Run an end-to-end check on a real instance: log in → create a chat by number → send a message → receive the recipient's reply in the same chat → reply from an unknown number creates a chat → message from the phone appears as outgoing → logout clears state; also verify that `npm test`, `npm run typecheck`, `npm run lint:fsd`, and `npm run build` pass and that the console contains no token
+- [x] 6.2 Run an end-to-end check on a real instance: log in → create a chat by number → send a message → receive the recipient's reply in the same chat → reply from an unknown number creates a chat → message from the phone appears as outgoing → logout clears state; also verify that `npm test`, `npm run typecheck`, `npm run lint:fsd`, and `npm run build` pass and that the console contains no token
 
 ## Workflow follow-up
 

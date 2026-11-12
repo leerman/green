@@ -268,7 +268,7 @@ UI tests are optional and not required in this change.
 
 - [FSD adds many folders for a small app] → This is accepted for a clear structure and room to grow. Steiger keeps the boundaries from eroding.
 - [The pull to cross-import features (for example, auth → receive-notifications)] → Features are coordinated only through `app/model/session-lifecycle` and the session entity's state. Steiger catches violations.
-- [The `idMessage` in the `sendMessage` response may not match the `idMessage` in `outgoingAPIMessageReceived`] → Check this on a real instance at the start of implementation (task 3.3). If they do not match, the user sees a duplicate. The fallback is to ignore `outgoingAPIMessageReceived` and keep only local copies.
+- [The `idMessage` in the `sendMessage` response may not match the `idMessage` in `outgoingAPIMessageReceived`] → Checked on a real instance (task 4.5): they match, so merging by `idMessage` holds. Had they differed, the fallback would have been to ignore `outgoingAPIMessageReceived` and keep only local copies.
 - [The text field in outgoing notifications may differ from that in incoming ones] → `mapNotification` reads both known fields. Check this on real data.
 - [The token is visible in the browser's Network tab] → This is unavoidable without a backend. The token is not logged or stored, and it disappears when the page is reloaded.
 - [`VITE_GREEN_API_URL` is baked in at build time] → A different host requires a rebuild. This is acceptable for the task.
@@ -283,4 +283,6 @@ Not applicable. This is the first version of the app. Deployment is a static bui
 
 ## Open Questions
 
-- The exact text field and `idMessage` format in `outgoingAPIMessageReceived` / `outgoingMessageReceived` for MAX. This is checked on a real instance and affects only the `mapNotification` implementation, not the specs or architecture.
+- ~~The exact text field and `idMessage` format in `outgoingAPIMessageReceived` / `outgoingMessageReceived` for MAX.~~ Checked on a real instance on 2026-11-13 (task 4.5):
+  - The `idMessage` from the `sendMessage` response matches the `idMessage` in `outgoingAPIMessageReceived`: a message sent from the app ends up as exactly one copy in the chat.
+  - The exact text field of outgoing notifications was not pinned down. `mapNotification` reads both `textMessageData.textMessage` and `extendedTextMessageData.text`, and messages sent from the phone display correctly, so no change is needed.
