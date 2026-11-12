@@ -14,7 +14,7 @@ const base: ChatEvent[] = [
 const queued: ChatEvent = { type: 'messageQueued', chatId: '1', tmpId: 'tmp-a', text: 'hello', ts: 1000 }
 const sent: ChatEvent = { type: 'messageSent', chatId: '1', tmpId: 'tmp-a', idMessage: 'ID1' }
 const failed: ChatEvent = { type: 'messageFailed', chatId: '1', tmpId: 'tmp-a' }
-const echo: ChatEvent = { type: 'outgoingReceived', chatId: '1', idMessage: 'ID1', text: 'hello', ts: 1001 }
+const echo: ChatEvent = { type: 'outgoingReceived', chatId: '1', idMessage: 'ID1', text: 'hello', ts: 1001, title: 'T' }
 
 const messages = (s: ChatsState, chatId = '1') => s.chats[chatId].messages
 
@@ -62,7 +62,7 @@ describe('merging outgoing copies', () => {
       // Reply at server time 6_000, before the local ts: shown above for now.
       { type: 'incomingReceived', chatId: '1', idMessage: 'R1', text: 'answer', ts: 6_000, title: 'Alice' },
       // The echo carries the real server time of the question.
-      { type: 'outgoingReceived', chatId: '1', idMessage: 'ID1', text: 'question', ts: 1_000 },
+      { type: 'outgoingReceived', chatId: '1', idMessage: 'ID1', text: 'question', ts: 1_000, title: 'T' },
     ])
     expect(messages(s).map((m) => m.id)).toEqual(['ID1', 'R1'])
   })
@@ -86,7 +86,7 @@ describe('merging outgoing copies', () => {
   })
 
   it('a message from another device appears as outgoing and moves the chat up', () => {
-    const s = run([...base, { type: 'outgoingReceived', chatId: '1', idMessage: 'PHONE1', text: 'from phone', ts: 5 }])
+    const s = run([...base, { type: 'outgoingReceived', chatId: '1', idMessage: 'PHONE1', text: 'from phone', ts: 5, title: 'T' }])
     expect(s.order[0]).toBe('1')
     expect(messages(s)).toEqual([
       { id: 'PHONE1', direction: 'out', content: { type: 'text', text: 'from phone' }, timestamp: 5, status: 'sent' },
@@ -95,18 +95,30 @@ describe('merging outgoing copies', () => {
 
   it('never rewrites an incoming message that shares the idMessage', () => {
     const s1 = run([...base, { type: 'incomingReceived', chatId: '1', idMessage: 'SAME', text: 'from Alice', ts: 5, title: 'Alice' }])
-    const s2 = applyEvent(s1, { type: 'outgoingReceived', chatId: '1', idMessage: 'SAME', text: 'mine', ts: 6 })
+    const s2 = applyEvent(s1, { type: 'outgoingReceived', chatId: '1', idMessage: 'SAME', text: 'mine', ts: 6, title: 'T' })
     expect(s2).toBe(s1)
     expect(messages(s2)).toEqual([
       { id: 'SAME', direction: 'in', content: { type: 'text', text: 'from Alice' }, timestamp: 5 },
     ])
   })
 
-  it('ignores an outgoing notification for an unknown chat', () => {
-    const s1 = run(base)
-    const s2 = applyEvent(s1, { type: 'outgoingReceived', chatId: '999', idMessage: 'X', text: 'x', ts: 1 })
-    expect(s2).toBe(s1)
-    expect(s2.chats['999']).toBeUndefined()
+  it('creates the chat for an outgoing message to an unknown chat (e.g. Favorites)', () => {
+    const s1 = run([...base, { type: 'chatOpened', chatId: '2' }])
+    const s2 = applyEvent(s1, { type: 'outgoingReceived', chatId: '999', idMessage: 'X', text: 'note to self', ts: 7, title: 'Favorites' })
+    expect(s2.order[0]).toBe('999')
+    expect(s2.activeChatId).toBe('2')
+    expect(s2.chats['999']).toEqual({
+      chatId: '999',
+      title: 'Favorites',
+      messages: [{ id: 'X', direction: 'out', content: { type: 'text', text: 'note to self' }, timestamp: 7, status: 'sent' }],
+    })
+    // Repeated delivery does not add a copy.
+    expect(applyEvent(s2, { type: 'outgoingReceived', chatId: '999', idMessage: 'X', text: 'note to self', ts: 7, title: 'Favorites' })).toBe(s2)
+  })
+
+  it('titles an auto-created outgoing chat with chatId when the title is empty', () => {
+    const s = applyEvent(initialChatsState, { type: 'outgoingReceived', chatId: '999', idMessage: 'X', text: 'x', ts: 1, title: '' })
+    expect(s.chats['999'].title).toBe('999')
   })
 
   it('ignores messageSent for an unknown chat or unknown tmpId', () => {

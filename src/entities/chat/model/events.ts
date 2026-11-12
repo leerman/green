@@ -14,6 +14,7 @@ export type ChatEvent =
       title: string
       phone?: string
     }
-  | { type: 'outgoingReceived'; chatId: string; idMessage: string; text: string; ts: number }
+  /** Sent from this app or another device; creates the chat if it is not in the list. */
+  | { type: 'outgoingReceived'; chatId: string; idMessage: string; text: string; ts: number; title: string }
 
 export type ChatEventType = ChatEvent['type']

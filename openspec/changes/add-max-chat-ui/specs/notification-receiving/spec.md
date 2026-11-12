@@ -52,7 +52,7 @@ The system SHALL pass on to chats only notifications about incoming messages, ou
 
 #### Scenario: Outgoing message from a phone to an unknown chat
 - **WHEN** a notification about an outgoing message from another device arrives for a `chatId` that is not in the list
-- **THEN** the system does not create a chat
+- **THEN** the system creates the chat with that message as outgoing, and the active chat does not change
 
 ### Requirement: Resilience to network errors
 If a request to the queue fails, the system SHALL keep polling with an increasing delay between attempts and SHALL reset the delay after the first successful request. A network error SHALL NOT end the session.

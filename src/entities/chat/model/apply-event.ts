@@ -124,7 +124,24 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
 
     case 'outgoingReceived': {
       const chat = state.chats[event.chatId]
-      if (!chat) return state
+      if (!chat) {
+        // Sent from another device to a chat that is not in the list yet
+        // (e.g. to yourself in Favorites): create it.
+        const created: Chat = {
+          chatId: event.chatId,
+          title: event.title || event.chatId,
+          messages: [
+            {
+              id: event.idMessage,
+              direction: 'out',
+              content: { type: 'text', text: event.text },
+              timestamp: event.ts,
+              status: 'sent',
+            },
+          ],
+        }
+        return updateChat(state, created, { toTop: true })
+      }
       const existing = chat.messages.find((m) => m.id === event.idMessage)
       // An incoming message with the same id is not ours to replace.
       if (existing?.direction === 'in') return state

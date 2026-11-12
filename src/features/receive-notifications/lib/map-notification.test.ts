@@ -75,7 +75,13 @@ describe('mapNotification', () => {
       idMessage: 'OUT1',
       text: 'hi',
       ts: TS * 1000,
+      title: 'Alice',
     })
+  })
+
+  it('titles an outgoing chat with chatId when there is no chat name', () => {
+    const body = { ...outgoing('outgoingMessageReceived'), senderData: { chatId: '10000001', sender: '79990000000@c.us' } }
+    expect(mapNotification(body, LOGIN_AT)).toMatchObject({ type: 'outgoingReceived', title: '10000001' })
   })
 
   it.each(['outgoingMessageReceived', 'incomingMessageReceived'])('accepts extendedTextMessage in %s', (type) => {

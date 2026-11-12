@@ -69,5 +69,7 @@ export function mapNotification(body: unknown, loginAt: number): ChatEvent | nul
     return { type: 'incomingReceived', chatId, idMessage, text, ts, title, ...(phone ? { phone } : {}) }
   }
 
-  return { type: 'outgoingReceived', chatId, idMessage, text, ts }
+  // The sender of an outgoing message is the instance itself: only the chat name describes the recipient.
+  const title = nonEmptyString(b.senderData?.chatName) ?? chatId
+  return { type: 'outgoingReceived', chatId, idMessage, text, ts, title }
 }

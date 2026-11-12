@@ -55,16 +55,24 @@ The system SHALL NOT create a second chat with the same `chatId` or phone number
 - **WHEN** `checkAccount` returns a `chatId` that already has a chat
 - **THEN** the system opens the existing chat and does not create a new one
 
-### Requirement: Automatic chat creation for incoming messages
-When a message arrives from a personal chat with a `chatId` that is not in the list, the system SHALL create a chat automatically. The title SHALL be taken from the sender's contact name, then the sender name, then `chatId`. The phone number SHALL come from the notification when it is present.
+### Requirement: Automatic chat creation for new messages
+When a message arrives in a personal chat with a `chatId` that is not in the list, the system SHALL create a chat automatically, both for incoming messages and for outgoing messages the user sent from another device. Creating the chat SHALL NOT change the active chat.
 
 #### Scenario: Message from an unknown sender
 - **WHEN** a text message arrives from a `chatId` that is not in the list
 - **THEN** a new chat with that message appears in the list, and the active chat does not change
 
+#### Scenario: Title and phone of an incoming chat
+- **WHEN** a chat is created for an incoming message
+- **THEN** its title is the sender's contact name, then the sender name, then the chat name, then `chatId`, and its phone number comes from the notification when present
+
 #### Scenario: No name in the notification
-- **WHEN** the notification has neither the contact name nor the sender name
+- **WHEN** the notification has no contact name, sender name, or chat name
 - **THEN** the chat is titled with its `chatId`
+
+#### Scenario: Message sent from the phone to an unknown chat
+- **WHEN** the user sends a text message from the phone to a `chatId` that is not in the list, for example to themselves in Favorites
+- **THEN** a new chat titled with the chat name, or `chatId` when there is none, appears in the list with that message as outgoing, and the active chat does not change
 
 ### Requirement: Chat list
 The system SHALL show the list of chats in the sidebar, sorted by the time of the latest message, newest first. Each item SHALL show the chat title and the text of the latest message.

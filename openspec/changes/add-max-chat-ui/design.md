@@ -138,7 +138,7 @@ Domain events (`entities/chat/model/events.ts`):
 | `messageSent {chatId, tmpId, idMessage}` | sendMessage response | see D5 |
 | `messageFailed {chatId, tmpId}` | sendMessage error | status `failed` |
 | `incomingReceived {chatId, idMessage, text, ts, title, phone?}` | features/receive-notifications | auto-creates the chat; ignores a duplicate `idMessage` |
-| `outgoingReceived {chatId, idMessage, text, ts}` | features/receive-notifications | see D5; ignored for an unknown chat |
+| `outgoingReceived {chatId, idMessage, text, ts, title}` | features/receive-notifications | see D5; auto-creates the chat |
 
 Any event with a message moves its chat to the top of `order`.
 
@@ -150,7 +150,7 @@ A pure function in `features/receive-notifications/lib/map-notification.ts`. It 
 - `messageData.typeMessage` is not `textMessage` or `extendedTextMessage` (text with a link preview), or the text is missing
 - `senderData.chatId` is missing or starts with `-` (group)
 
-Fields: `incomingMessageReceived` → `incomingReceived` with title `senderContactName || senderName || chatName || chatId` and `phone = String(senderPhoneNumber)` when present. Both outgoing types → `outgoingReceived`. For outgoing notifications, the text field must be checked against real data (see Open Questions). The function reads it defensively from `textMessageData.textMessage` or `extendedTextMessageData.text`.
+Fields: `incomingMessageReceived` → `incomingReceived` with title `senderContactName || senderName || chatName || chatId` and `phone = String(senderPhoneNumber)` when present. Both outgoing types → `outgoingReceived` with title `chatName || chatId` (the sender is the instance itself, so there is no recipient phone). For outgoing notifications, the text field must be checked against real data (see Open Questions). The function reads it defensively from `textMessageData.textMessage` or `extendedTextMessageData.text`.
 
 ### D5. Merging outgoing copies
 
@@ -162,7 +162,7 @@ messageSent {tmpId, idMessage}:
   else                                              -> tmp.id = idMessage, status = "sent"
 
 outgoingReceived {idMessage, ...}:
-  if chat unknown                                   -> ignore
+  if chat unknown                                   -> create the chat with this message
   if chat contains id == idMessage                  -> replace with the server copy (status "sent",
                                                        server timestamp, re-sorted)
   else                                              -> append as a new outgoing message
@@ -257,7 +257,7 @@ Layout like web.max.ru (`pages/messenger`): a left sidebar about 320 px wide (`w
 Vitest. Tests sit next to the code inside each slice (`*.test.ts`). The domain needs no jsdom:
 - `shared/lib/phone`: formatting (`+`, spaces, brackets, hyphens), numbers from different countries, 7/15-digit boundaries, invalid input.
 - `shared/api/green-api`: `ApiError` mapping, no token in errors.
-- `entities/chat`: both orders of `messageSent`/`outgoingReceived`, repeated delivery, retry, auto-creation, ignoring an unknown chat for outgoing messages, sorting, `reset`.
+- `entities/chat`: both orders of `messageSent`/`outgoingReceived`, repeated delivery, retry, auto-creation, auto-creation for incoming and outgoing messages, sorting, `reset`.
 - `features/receive-notifications`: `mapNotification` (every webhook type, groups, old timestamps, broken format); poller with fake timers.
 - `features/auth`, `features/create-chat`, `features/send-message`: model functions against a mock API.
 - `app/model/session-lifecycle`: `ready` → start, `clear` → stop + reset.
