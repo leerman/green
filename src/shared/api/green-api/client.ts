@@ -4,11 +4,14 @@ import { installErrorInterceptor } from './errors'
 import type {
   CheckAccountResponse,
   Credentials,
+  GetChatHistoryResponse,
+  GetChatsResponse,
   DeleteNotificationResponse,
   GetSettingsResponse,
   GetStateInstanceResponse,
   Notification,
   ReceiveNotificationOptions,
+  RequestOptions,
   SendMessageResponse,
 } from './types'
 
@@ -23,6 +26,8 @@ export interface GreenApi {
   sendMessage(chatId: string, text: string): Promise<SendMessageResponse>
   receiveNotification(options: ReceiveNotificationOptions): Promise<Notification | null>
   deleteNotification(receiptId: number): Promise<DeleteNotificationResponse>
+  getChats(options?: RequestOptions): Promise<GetChatsResponse>
+  getChatHistory(chatId: string, count: number, options?: RequestOptions): Promise<GetChatHistoryResponse>
 }
 
 export interface CreateApiOptions {
@@ -83,6 +88,20 @@ export function createApi(
         url('deleteNotification', `/${receiptId}`),
       )
       return data
+    },
+
+    async getChats({ signal } = {}) {
+      const { data } = await http.get<GetChatsResponse | null>(url('getChats'), { signal })
+      return Array.isArray(data) ? data : []
+    },
+
+    async getChatHistory(chatId, count, { signal } = {}) {
+      const { data } = await http.post<GetChatHistoryResponse | null>(
+        url('getChatHistory'),
+        { chatId, count },
+        { signal },
+      )
+      return Array.isArray(data) ? data : []
     },
   }
 }
