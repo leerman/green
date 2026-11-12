@@ -1,6 +1,6 @@
 export type { Chat, ChatsState, ChatType, HistoryState } from './model/types'
 export { initialChatsState } from './model/types'
-export type { ChatEvent, ChatEventType } from './model/events'
+export type { ChatEvent, ChatEventType, LoadedChat } from './model/events'
 export { applyEvent, inferChatType } from './model/apply-event'
 export { useChatsStore } from './model/store'
 export type { ChatsStore } from './model/store'

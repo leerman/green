@@ -86,3 +86,28 @@ describe('createChat', () => {
     expect(chats().activeChatId).toBe('10001')
   })
 })
+
+describe('createChat with chats loaded from the server', () => {
+  beforeEach(() => {
+    useSessionStore.getState().clear()
+    chats().reset()
+  })
+
+  it('opens a loaded personal chat by its phone without calling checkAccount', async () => {
+    const api = login(async () => ({ exist: true, chatId: '1' }))
+    chats().apply({
+      type: 'chatsLoaded',
+      chats: [{ chatId: '555', title: 'Alice', chatType: 'user', phone: '79991234567' }],
+    })
+    expect(await createChat('+7 999 123 45 67')).toEqual({ ok: true, chatId: '555' })
+    expect(api.checkAccount).not.toHaveBeenCalled()
+  })
+
+  it('never matches a loaded chat without a phone', async () => {
+    const api = login(async () => ({ exist: true, chatId: '10001' }))
+    chats().apply({ type: 'chatsLoaded', chats: [{ chatId: '-5', title: 'Team', chatType: 'group' }] })
+    expect(await createChat('79991234567')).toEqual({ ok: true, chatId: '10001' })
+    expect(api.checkAccount).toHaveBeenCalledOnce()
+    expect(chats().order).toEqual(['10001', '-5'])
+  })
+})

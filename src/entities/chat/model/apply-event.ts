@@ -1,5 +1,5 @@
 import type { Message } from '@/entities/message/@x/chat'
-import type { ChatEvent } from './events'
+import type { ChatEvent, LoadedChat } from './events'
 import type { Chat, ChatsState, ChatType } from './types'
 
 /** Group chat IDs are negative numbers in MAX; everything else is treated as personal. */
@@ -50,6 +50,27 @@ function updateMessage(
   const messages = chat.messages.slice()
   messages[index] = patch(messages[index])
   return updateChat(state, { ...chat, messages }, { toTop: false })
+}
+
+function mergeLoadedChats(state: ChatsState, loaded: LoadedChat[]): ChatsState {
+  const chats = { ...state.chats }
+  const appended: string[] = []
+  let changed = false
+  for (const item of loaded) {
+    const existing = chats[item.chatId]
+    if (!existing) {
+      chats[item.chatId] = newChat(item.chatId, item.title, item.chatType, { phone: item.phone })
+      appended.push(item.chatId)
+      changed = true
+      continue
+    }
+    const phone = existing.phone ?? item.phone
+    if (existing.type === item.chatType && existing.phone === phone) continue
+    chats[item.chatId] = { ...existing, type: item.chatType, phone }
+    changed = true
+  }
+  if (!changed) return state
+  return { ...state, chats, order: [...state.order, ...appended] }
 }
 
 export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
@@ -128,6 +149,9 @@ export function applyEvent(state: ChatsState, event: ChatEvent): ChatsState {
         status: 'sent',
       }))
     }
+
+    case 'chatsLoaded':
+      return mergeLoadedChats(state, event.chats)
 
     case 'outgoingReceived': {
       const chat = state.chats[event.chatId]
