@@ -85,3 +85,46 @@ describe('chatsLoaded', () => {
     expect(s.order).toEqual(['1'])
   })
 })
+
+describe('chatsLoaded with the latest message', () => {
+  const last = (id: string, timestamp: number) => ({
+    id,
+    direction: 'in' as const,
+    content: { type: 'text' as const, text: `text ${id}` },
+    timestamp,
+  })
+
+  it('seeds a new chat with its latest message and keeps history not loaded', () => {
+    const s = run([loaded(user('1', { lastMessage: last('m9', 90) }), user('2'))])
+    expect(s.chats['1'].messages).toEqual([last('m9', 90)])
+    expect(s.chats['1'].history).toBe('idle')
+    expect(s.chats['2'].messages).toEqual([])
+  })
+
+  it('does not duplicate a message the chat already got live', () => {
+    const s1 = run([{ type: 'incomingReceived', chatId: '1', idMessage: 'm9', text: 'live', ts: 90, title: 'One' }])
+    const s2 = applyEvent(s1, loaded(user('1', { lastMessage: last('m9', 90) })))
+    expect(s2).toBe(s1)
+    expect(s2.chats['1'].messages.map((m) => m.content)).toEqual([{ type: 'text', text: 'live' }])
+  })
+
+  it('adds the latest message to an existing chat by timestamp, without moving the chat', () => {
+    const s1 = run([
+      { type: 'chatCreated', chatId: '7', title: 'Seven' },
+      { type: 'incomingReceived', chatId: '8', idMessage: 'x', text: 'x', ts: 50, title: 'Eight' },
+      { type: 'incomingReceived', chatId: '7', idMessage: 'new', text: 'new', ts: 200, title: 'Seven' },
+    ])
+    const s2 = applyEvent(s1, loaded(user('8'), user('7', { lastMessage: last('old', 100) })))
+    expect(s2.chats['7'].messages.map((m) => m.id)).toEqual(['old', 'new'])
+    expect(s2.order).toEqual(s1.order)
+    expect(s2.chats['7'].history).toBe('idle')
+  })
+
+  it('leaves a later history load without a duplicate of the preview', () => {
+    const s = run([
+      loaded(user('1', { lastMessage: last('m9', 90) })),
+      { type: 'historyLoaded', chatId: '1', messages: [last('m1', 10), last('m9', 90)] },
+    ])
+    expect(s.chats['1'].messages.map((m) => m.id)).toEqual(['m1', 'm9'])
+  })
+})

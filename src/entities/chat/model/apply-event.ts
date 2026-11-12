@@ -59,14 +59,22 @@ function mergeLoadedChats(state: ChatsState, loaded: LoadedChat[]): ChatsState {
   for (const item of loaded) {
     const existing = chats[item.chatId]
     if (!existing) {
-      chats[item.chatId] = newChat(item.chatId, item.title, item.chatType, { phone: item.phone })
+      const messages = item.lastMessage ? [item.lastMessage] : []
+      chats[item.chatId] = newChat(item.chatId, item.title, item.chatType, { phone: item.phone, messages })
       appended.push(item.chatId)
       changed = true
       continue
     }
     const phone = existing.phone ?? item.phone
-    if (existing.type === item.chatType && existing.phone === phone) continue
-    chats[item.chatId] = { ...existing, type: item.chatType, phone }
+    const last = item.lastMessage
+    const addLast = last !== undefined && !existing.messages.some((m) => m.id === last.id)
+    if (existing.type === item.chatType && existing.phone === phone && !addLast) continue
+    chats[item.chatId] = {
+      ...existing,
+      type: item.chatType,
+      phone,
+      messages: addLast ? insertByTimestamp(existing.messages, last) : existing.messages,
+    }
     changed = true
   }
   if (!changed) return state

@@ -7,6 +7,8 @@ export interface LoadedChat {
   title: string
   chatType: ChatType
   phone?: string
+  /** Latest message from the list, already mapped; text messages only. */
+  lastMessage?: Message
 }
 
 export type ChatEvent =
@@ -33,7 +35,8 @@ export type ChatEvent =
 
   /**
    * Chat list from the server, in its activity order. New chats are appended after the
-   * existing ones; existing chats only get their type and a missing phone.
+   * existing ones; existing chats only get their type, a missing phone, and the latest
+   * message if they do not have it yet.
    */
   | { type: 'chatsLoaded'; chats: LoadedChat[] }
   | { type: 'historyRequested'; chatId: string }
