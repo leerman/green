@@ -12,6 +12,7 @@ The app keeps everything in memory and starts every session with an empty sideba
 - In group chats, incoming messages show the sender's name. A chat created from a live group message is titled with the chat name, not the sender's name.
 - Channels are read-only: the message input is replaced by a "Read-only channel" footer.
 - Non-text messages stay hidden, now in history as well as in live notifications.
+- Messages in the chat window are grouped by day: a separator such as "Today", "Yesterday", or "12 November" appears before each day's first message. Because history and previews now reach back days, sidebar items show a date ("Yesterday", "12 Nov") instead of only a time for older messages.
 - Logout also cancels any chat list or history load in progress, and results from an earlier session never reach the new one.
 - The README documents the limitations below.
 
@@ -30,14 +31,14 @@ The app keeps everything in memory and starts every session with an empty sideba
 
 ### Modified Capabilities
 
-- `chat-management`: the chat list is loaded from `getChats` at login and is ordered by server activity, adjusted by live messages. Chats of every type (personal, group, channel, bot) are listed and auto-created. Group chat titles come from the chat name. A phone number of `0` from GREEN-API counts as no phone, so duplicate detection by phone does not match it.
-- `messaging`: messages from other devices and incoming messages are shown in chats of every type. Incoming group messages show the sender's name. Channels are read-only. The unsupported-types rule also covers history.
+- `chat-management`: the chat list is loaded from `getChats` at login and is ordered by server activity, adjusted by live messages. Sidebar items show a date instead of a time for messages older than today. Chats of every type (personal, group, channel, bot) are listed and auto-created. Group chat titles come from the chat name. A phone number of `0` from GREEN-API counts as no phone, so duplicate detection by phone does not match it.
+- `messaging`: messages from other devices and incoming messages are shown in chats of every type. Incoming group messages show the sender's name. Channels are read-only. The unsupported-types rule also covers history. Messages are grouped by date with separators.
 - `notification-receiving`: the filter no longer drops group chats.
 - `instance-session`: logout also cancels chat list and history loads.
 
 ## Impact
 
-- **Code:** `shared/api/green-api` (new `getChats` and `getChatHistory` methods and types); `entities/chat` (chat `type`, history state, new bulk events and merge rules); `entities/message` (optional sender on a message, author line in the bubble); `features/receive-notifications` (group filter removed, group titles and senders); a new feature slice that loads the chat list and history; `widgets/chat-window` (history loading and error states, read-only footer); `widgets/sidebar` (list load error); `app/model/session-lifecycle.ts` (start and cancel the chat list load).
+- **Code:** `shared/api/green-api` (new `getChats` and `getChatHistory` methods and types); `entities/chat` (chat `type`, history state, new bulk events and merge rules); `entities/message` (optional sender on a message, author line in the bubble, day and list date formatting); `features/receive-notifications` (group filter removed, group titles and senders); a new feature slice that loads the chat list and history; `widgets/chat-window` (history loading and error states, read-only footer, date separators); `widgets/sidebar` (list loading and error states); `entities/chat` `ChatListItem` (date of the latest message); `app/model/session-lifecycle.ts` (start the chat list load, cancel the chat list and history loads).
 - **External systems:** new GREEN-API calls `getChats` (once per login, plus retries) and `getChatHistory` (once per opened chat, plus retries). Both have per-second rate limits on the GREEN-API side, and `getChatHistory` returns HTTP 429 when called about a second after the previous call.
 - **Docs:** README feature list and a new limitations section.
-- **No new dependencies.** State stays in memory only.
+- **No new dependencies.** State stays in memory only. A test-only `__mocks__/zustand.ts` at the repository root lets render tests see the stores' current state (design D9).

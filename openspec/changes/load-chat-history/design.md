@@ -9,7 +9,7 @@ See proposal.md (Why) for the motivation and the specs for the required behavior
 - `features/receive-notifications/lib/map-notification.ts` drops any `chatId` that starts with `-` (groups) and titles a new chat from the sender before the chat name.
 - `Chat` has no type or load state. `Message` has no sender.
 
-GREEN-API for MAX facts (from the docs; to be confirmed on a real instance, see tasks):
+GREEN-API for MAX facts (from the docs, confirmed on a real instance on 2026-11-14; see Real-instance findings):
 - `GET getChats` returns `[{ chatId, name, type: user|group|channel|bot, phoneNumber, unreadCount, lastMessage? }]`, sorted by activity. It has an optional `count` and no pagination. `phoneNumber` is `0` for groups and hidden numbers. `lastMessage` is not in the docs and was found on a real instance (see Real-instance findings).
 - `POST getChatHistory { chatId, count }` returns messages newest first: `type: incoming|outgoing`, `idMessage`, `timestamp` (seconds), `typeMessage`, `textMessage`, `extendedTextMessage.text`, `senderId`, `senderName`, `senderContactName`, `isDeleted`, and more. There is no offset or cursor.
 
@@ -39,12 +39,12 @@ GREEN-API for MAX facts (from the docs; to be confirmed on a real instance, see 
 ```
 Chat    + type: 'user' | 'group' | 'channel' | 'bot'
         + history: 'idle' | 'loading' | 'loaded' | 'error'
-Message + sender?: { id: string; name?: string }   (incoming group messages only)
+Message + sender?: { id: string; name?: string }   (incoming messages; shown only in groups)
 ```
 
-- `type` for a chat created from a live notification or by phone is inferred: a `chatId` that starts with `-` is `group`, anything else is `user`. When `getChats` reports the real type, that type replaces the inferred one. This is the only field that `chatsLoaded` changes on an existing chat, apart from a missing phone.
+- `type` for a chat created from a live notification or by phone is inferred: a `chatId` that starts with `-` is `group`, anything else is `user`. When `getChats` reports the real type, that type replaces the inferred one. On an existing chat, `chatsLoaded` changes only the type, a missing phone, and adds the `lastMessage` when it is not already in the chat (D3).
 - `history` starts as `idle` for every chat, however it was created. Live messages never change it, so a chat with live messages still loads its history on first open (spec: chat-history, "Chat with live messages but no history").
-- The author line in `MessageBubble` is driven by `message.sender?.name` and a `showSender` prop that `MessageList` sets only for `group` chats. `entities/message` does not need to know about chat types.
+- `sender` is set on any incoming message whose source carries a sender ID (history items and group notifications). The author line in `MessageBubble` is driven by `message.sender?.name` and a `showSender` prop that `MessageList` sets only for `group` chats, so personal chats never show it. `entities/message` does not need to know about chat types.
 
 *Alternative:* a separate history store keyed by `chatId`. Rejected: the history state must reset with the chats and is read alongside the chat everywhere. Keeping it on `Chat` means `reset()` already clears it.
 
@@ -77,9 +77,9 @@ features/load-chats/
 Both loaders live in one slice because the session lifecycle starts and stops them together, and features cannot import each other.
 
 - **Chat list:** `session-lifecycle.ts` calls `chatListLoader.start(api)` next to `poller.start`, and `chatListLoader.stop()` next to `poller.stop`. The loader keeps a `runId` and an `AbortController` like the poller. A response is applied only if its `runId` is still current. Its status (`idle | loading | error`) lives in a small zustand store in the slice, which `stop()` resets.
-- **History:** `loadHistory(chatId)` reads `api` from the session store, dispatches `historyRequested` at once (the chat shows its loading state while it waits its turn), and puts the chat in a FIFO queue. A single worker takes one chat at a time and calls `getChatHistory(chatId, 100)`, starting each request at least `HISTORY_MIN_INTERVAL_MS` (1500) after the previous one started. On an `ApiError` of kind `limit` (HTTP 429), it waits `HISTORY_RETRY_DELAY_MS` (3000) and retries, up to `HISTORY_MAX_RETRIES` (2). Any other error, or a 429 after the last retry, dispatches `historyFailed`. When a call settles, the worker applies the result only if the session store still holds the **same `api` instance** and the chat still exists. A new login always creates a new client, so this rules out cross-session writes even when the `chatId` is the same. `stopHistory()` empties the queue, aborts the request in flight and any pending wait, and bumps a generation counter so the worker exits. The lifecycle calls it on logout. The clock and timers are injectable so the pacing is tested with fake timers.
+- **History:** `loadHistory(chatId)` reads `api` from the session store, dispatches `historyRequested` at once (the chat shows its loading state while it waits its turn), and puts the chat in a FIFO queue. A single worker takes one chat at a time and calls `getChatHistory(chatId, 100)`, starting each request at least `HISTORY_MIN_INTERVAL_MS` (1500) after the previous one started. On an `ApiError` of kind `limit` (HTTP 429), it waits `HISTORY_RETRY_DELAY_MS` (3000) and retries, up to `HISTORY_MAX_RETRIES` (2). Any other error, or a 429 after the last retry, dispatches `historyFailed`. When a call settles, the worker applies the result only if the session store still holds the **same `api` instance** and the chat still exists. A new login always creates a new client, so this rules out cross-session writes even when the `chatId` is the same. `stopHistory()` empties the queue, aborts the request in flight and any pending wait, and bumps a generation counter so the worker exits. The lifecycle calls it on logout. The loader uses `Date.now()` and `setTimeout` directly, and its tests drive the pacing and retries with Vitest fake timers.
 - *Why a queue rather than only reacting to 429:* the real instance answered 429 to a call about a second after the previous one. Opening chats in quick succession is normal browsing, so pacing avoids most 429s instead of turning each into a delay. The retries cover the rest, for example a limit shared with another client of the same instance.
-- **Trigger:** `ChatWindow` runs an effect keyed on `chatId` that calls `loadHistory` when the chat's `history` is `idle` or `error`. So the first open loads, and reopening after a failure retries (spec: "History load error and retry"), while a loaded chat is never fetched again. A second open while loading is a no-op because the state is `loading`.
+- **Trigger:** `ChatWindow` runs an effect keyed on `chatId` that calls `loadHistory(chatId)` whenever the open chat changes. The loader itself skips chats whose `history` is `loading` or `loaded`, so the first open loads, reopening after a failure retries (spec: "History load error and retry"), a loaded chat is never fetched again, and a second open while loading is a no-op. Keeping the rule in the loader puts it under the loader's unit tests; the effect cannot be exercised by the render tests (D9).
 
 *Alternative:* trigger history from `openChat` in the store. Rejected: an entity cannot call a feature, and it would hide a network call behind a state setter.
 
@@ -87,13 +87,13 @@ Both loaders live in one slice because the session lifecycle starts and stops th
 
 ### D5. Mapping history items
 
-`map-history` returns `null` (skip) unless all of these hold: `typeMessage` is `textMessage` or `extendedTextMessage`, `isDeleted` is not true, a non-empty text exists (`textMessage`, then `extendedTextMessage.text`), `idMessage` is a non-empty string, and `timestamp` is a finite number. Direction comes from `type`. Outgoing messages get `status: 'sent'` whatever `statusMessage` says (delivered and read are not modeled). Incoming messages get `sender: { id: senderId, name: senderContactName ?? senderName }` when `senderId` is present. Reactions use `reactionMessage` (or `extendedTextMessageData` only) and so fall out on the type check.
+`map-history` returns `null` (skip) unless all of these hold: `typeMessage` is `textMessage` or `extendedTextMessage`, `isDeleted` is not true, a non-empty text exists (`textMessage`, then `extendedTextMessage.text`), `idMessage` is a non-empty string, and `timestamp` is a finite number. Direction comes from `type`. Outgoing messages get `status: 'sent'` whatever `statusMessage` says (delivered and read are not modeled). Incoming messages get `sender: { id: senderId, name }` when `senderId` is present, where `name` is the first **non-empty** of `senderContactName` and `senderName` (MAX sends `""` for a missing contact name), and is omitted when both are empty. Reactions use `reactionMessage` (or `extendedTextMessageData` only) and so fall out on the type check.
 
 ### D6. Group notifications
 
 In `map-notification`:
 - Remove the `chatId.startsWith('-')` filter.
-- For a group `chatId`, the title of an auto-created chat is `chatName ?? chatId`, and `incomingReceived` carries `sender: { id: senderData.sender, name: senderContactName ?? senderName }`.
+- For a group `chatId`, the title of an auto-created chat is the non-empty `chatName`, or `chatId`, and `incomingReceived` carries `sender: { id: senderData.sender, name }`, with `name` the first non-empty of `senderContactName` and `senderName`. The sender's phone is not the group's, so a group chat gets no phone.
 - Personal chats keep the existing title order and get no sender.
 
 The before-login filter stays. History now covers the queue backlog, so dropping those notifications loses nothing.
@@ -106,15 +106,32 @@ The before-login filter stays. History now covers the queue backlog, so dropping
 
 A 401/403 from `getChats` or `getChatHistory` is shown as an ordinary load error. Ending the session stays the poller's job (`onAuthError`): the poller hits the same credentials within seconds and logs out, and the loaders are then stopped by the lifecycle. This keeps one owner for that decision.
 
+### D9. Testing UI states without a DOM
+
+The project has no DOM test environment, and adding one (jsdom, Testing Library) is a new dependency this change does not need. UI states are tested by rendering components to a string with `react-dom/server` (`MessageBubble.test.tsx`, `Sidebar.test.tsx`, `ChatWindow.test.tsx`). Server rendering reads a zustand store's *initial* state, so a test-only root `__mocks__/zustand.ts`, enabled per file with `vi.mock('zustand')`, makes stores render their current state. Effects do not run in server rendering, so behavior that would live in an effect (such as which chats load history) is kept in the loaders, where it is unit-tested.
+
+### D10. Date separators and sidebar dates
+
+- Two pure functions in `entities/message/lib/format.ts`, both taking `now` so tests can fix it:
+  - `formatDayLabel(timestamp, now)` → "Today" / "Yesterday" / "12 November" / "28 December 2025" (message list separators).
+  - `formatListTime(timestamp, now)` → "09:15" / "Yesterday" / "12 Nov" / "28 Dec 2025" (sidebar).
+  Days are compared as local calendar dates, not 24-hour spans. Month names are English, like the rest of the UI, from a fixed list rather than `Intl`, so output does not depend on the runtime's locale data.
+- `MessageList` walks the already-sorted messages and renders a separator whenever the local day differs from the previous message's. Separators are derived on every render and never stored, so history merges, preview seeding, and live inserts cannot produce duplicate or misplaced separators. A separator is a centered chip styled like the existing "No messages yet" pill, not sticky.
+- `ChatListItem` replaces `formatTime` with `formatListTime(last.timestamp, Date.now())`.
+
+*Alternative:* store day groups in `ChatsState`. Rejected: it duplicates what the message order already says and would need maintaining in every merge rule.
+
 ## Risks / Trade-offs
 
-- [The MAX history and chat payloads differ from the docs (field names, `textMessage` vs. `extendedTextMessage`, `senderId`)] → Defensive optional types, mappers unit-tested against the documented shape, and a real-instance check task that records the actual payloads, as was done for `idMessage` in the previous change.
-- [`getChats` without `count` returns only part of the list] → Real-instance check. If it is truncated, pass a large `count`. That is a one-line change and does not affect the specs.
+- ~~[The MAX history and chat payloads differ from the docs]~~ Resolved by task 1.2: the payloads were recorded on a real instance, and the mappers are unit-tested against those shapes. Types stay all-optional for fields not seen yet.
+- ~~[`getChats` without `count` returns only part of the list]~~ Resolved by task 1.2: it returned every chat.
 - [`getChats` returns `[]` with HTTP 200 on a server-side problem (documented)] → It is indistinguishable from "no chats". The empty-list prompt shows, and creating chats still works. Accepted.
 - [A channel created from a live notification is inferred as `group` until `getChats` reports it, so the input is shown and a send fails] → Rare: only when the list load failed or the notification beats it. The existing "not sent" + retry flow covers it.
 - [Rate limits when the user opens many chats quickly] → At most one request per chat per session, requests paced 1.5 s apart, and bounded automatic retries on 429. Opening many chats quickly makes later ones wait a few seconds, with a loading indicator.
 - [The 1.5 s gap and 3 s retry delay are guesses from two probes, not documented limits] → They are constants, and a persistent 429 still ends in the normal error with Retry.
 - [100 messages may contain few texts in media-heavy chats] → Documented limitation. `count` is a constant and can be raised later.
+- [Day labels go stale across midnight: "Today" stays until the next render] → Any new message or chat switch re-renders. Accepted.
+- [Render tests do not run effects (D9)] → Effect-driven behavior is kept thin, and the browser check in the tasks covers it.
 
 ## Migration Plan
 

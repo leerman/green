@@ -28,6 +28,29 @@ The system SHALL NOT offer message input in a chat that GREEN-API reports as a c
 - **WHEN** the user opens a chat whose type is personal, group, or bot
 - **THEN** the chat window shows the input field
 
+### Requirement: Group messages by date
+The message list SHALL show a date separator before the first message of each calendar day, in local time. The label SHALL be "Today", "Yesterday", the day and month (for example "12 November") for earlier dates in the current year, or the day, month, and year (for example "28 December 2025") for earlier years.
+
+#### Scenario: Messages over several days
+- **WHEN** the active chat contains messages from three different days
+- **THEN** the list shows three separators, each directly before the first message of its day
+
+#### Scenario: Today and yesterday
+- **WHEN** the active chat contains messages from yesterday and today
+- **THEN** their separators read "Yesterday" and "Today"
+
+#### Scenario: Earlier dates
+- **WHEN** the active chat contains a message from 12 November of the current year and one from 28 December of the previous year
+- **THEN** their separators read "12 November" and "28 December" followed by that year
+
+#### Scenario: Live message after midnight
+- **WHEN** the last message in the active chat is from yesterday and a new message arrives today
+- **THEN** a "Today" separator appears before the new message
+
+#### Scenario: Older history loaded
+- **WHEN** the chat shows only its latest message and its history then loads with messages from earlier days
+- **THEN** each day has exactly one separator, in chronological order
+
 ## MODIFIED Requirements
 
 ### Requirement: Show messages sent from other devices
