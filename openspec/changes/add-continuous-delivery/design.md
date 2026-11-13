@@ -65,7 +65,7 @@ The deploy step sets `WRANGLER_OUTPUT_FILE_DIRECTORY` to a temporary directory. 
 
 ### PR comment via `gh`, with a hidden marker
 
-The comment body starts with `<!-- cf-pages-preview -->`. The step uses `gh api` to find an existing PR comment that contains the marker, then `PATCH`es it or `POST`s a new one. That avoids a third-party sticky-comment action, and the `gh` CLI is preinstalled on the runners. Only this step needs `pull-requests: write`. The rest of the workflow runs with `contents: read`.
+The comment body starts with `<!-- cf-pages-preview -->`. The step uses `gh api` to find an existing PR comment that contains the marker, then `PATCH`es it or `POST`s a new one. That avoids a third-party sticky-comment action, and the `gh` CLI is preinstalled on the runners. GitHub grants permissions per job, not per step, so the `deploy` job gets `pull-requests: write`. The `checks` jobs keep the workflow default, `contents: read`. On push runs the comment step is skipped, so the extra permission goes unused.
 
 ### Node version from `.nvmrc`
 

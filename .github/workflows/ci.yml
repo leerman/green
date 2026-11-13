@@ -38,6 +38,9 @@ jobs:
     # Fork pull requests get no secrets; skip the deploy instead of failing it.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # preview URL comment
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -56,8 +59,37 @@ jobs:
           DEPLOY_BRANCH: ${{ github.event_name == 'push' && 'main' || github.head_ref }}
           DEPLOY_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           DEPLOY_MESSAGE: ${{ github.event.pull_request.title || github.event.head_commit.message }}
+          WRANGLER_OUTPUT_FILE_DIRECTORY: ${{ runner.temp }}/wrangler-output
         run: |
           npm run deploy -- \
             --branch "$DEPLOY_BRANCH" \
             --commit-hash "$DEPLOY_SHA" \
             --commit-message "$DEPLOY_MESSAGE"
+          detail=$(cat "$WRANGLER_OUTPUT_FILE_DIRECTORY"/*.json | jq -c 'select(.type == "pages-deploy-detailed")')
+          echo "url=$(jq -r '.url' <<< "$detail")" >> "$GITHUB_OUTPUT"
+          echo "alias=$(jq -r '.alias // empty' <<< "$detail")" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL on the pull request
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          ALIAS_URL: ${{ steps.deploy.outputs.alias }}
+        run: |
+          marker='<!-- cf-pages-preview -->'
+          body="$marker
+          **Preview deployed** for ${HEAD_SHA:0:7}
+
+          | | |
+          |---|---|
+          | Branch preview | $ALIAS_URL |
+          | This commit | $DEPLOY_URL |"
+          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq "[.[] | select(.body | startswith(\"$marker\"))][0].id // empty" | head -n 1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" > /dev/null
+          else
+            gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -f body="$body" > /dev/null
+          fi
