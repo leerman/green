@@ -52,6 +52,35 @@ The value is baked in at build time. Changing it requires a rebuild. If it is no
 | `npm test`          | Run unit tests (Vitest)                                        |
 | `npm run typecheck` | Type-check the project                                         |
 | `npm run lint:fsd`  | Check the Feature-Sliced Design structure (Steiger)            |
+| `npm run deploy`    | Upload `dist/` to Cloudflare Pages (run `npm run build` first) |
+
+## Deployment
+
+The app is hosted on Cloudflare Pages, project `green-max-chat`, at https://green-max-chat.pages.dev. GitHub Actions (`.github/workflows/ci.yml`) deploys it:
+
+- **Pull requests to `main`:** type-check, tests, lint, and the FSD check each run as a separate status. If all four pass, the PR is deployed as a preview at `<branch>.green-max-chat.pages.dev`, and the URL is posted as one PR comment that's updated on each new push. PRs from forks run the checks but are never deployed and never see the Cloudflare credentials.
+- **Pushes to `main`:** the same four checks run. If they all pass, the commit is deployed to production. Production deploys run one at a time. If any check fails, nothing is deployed and production keeps serving the last good build.
+
+### Repository settings
+
+| Name                    | Kind     | Value                                                                      |
+| ----------------------- | -------- | -------------------------------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | secret   | API token with only *Account > Cloudflare Pages > Edit* permission          |
+| `CLOUDFLARE_ACCOUNT_ID` | secret   | Cloudflare account ID that owns the `green-max-chat` project               |
+| `VITE_GREEN_API_URL`    | variable | Optional. GREEN-API base URL baked into the build; default is used if unset |
+
+### Manual deploy
+
+```bash
+npx wrangler login          # once
+npm run build && npm run deploy
+```
+
+Wrangler takes the branch from git: deploying from `main` updates production, and deploying from any other branch creates a preview for that branch. To choose explicitly, pass `npm run deploy -- --branch <name>`.
+
+### Rollback
+
+In the Cloudflare dashboard, open **Workers & Pages > green-max-chat > Deployments**, pick an earlier production deployment, and choose **Rollback to this deployment**. You can also revert the commit on `main` and let CI redeploy.
 
 ## Project structure
 
