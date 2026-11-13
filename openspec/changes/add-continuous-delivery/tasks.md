@@ -20,7 +20,7 @@
 ## 4. End-to-end verification
 
 - [x] 4.1 Open the PR for this change: confirm that four separate check statuses appear, the deploy job runs after them, the branch alias URL serves the app, exactly one preview comment appears, and a second push to the PR updates that comment instead of adding another; then push a deliberately failing commit (for example, a type error) and confirm that the failing check blocks the deploy, and revert it
-- [ ] 4.2 Merge the PR: confirm that the push to `main` runs the checks and the production deploy, that `https://green-max-chat.pages.dev` serves the merge commit (its deployment appears as Production in `npx wrangler pages deployment list --project-name green-max-chat`), and that the preview comment step did not run
+- [x] 4.2 Merge the PR: confirm that the push to `main` runs the checks and the production deploy, that `https://green-max-chat.pages.dev` serves the merge commit (its deployment appears as Production in `npx wrangler pages deployment list --project-name green-max-chat`), and that the preview comment step did not run
 
 ## Workflow follow-up
 
