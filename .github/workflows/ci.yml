@@ -33,7 +33,7 @@ jobs:
       - run: npm run ${{ matrix.check }}
 
   deploy:
-    name: deploy (${{ github.event_name == 'push' && 'production' || 'preview' }})
+    name: deploy
     needs: checks
     # Fork pull requests get no secrets; skip the deploy instead of failing it.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
