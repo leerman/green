@@ -15,7 +15,7 @@
 
 ## 3. Repository setup (done by the repository owner)
 
-- [ ] 3.1 The repository owner creates a Cloudflare API token scoped to *Account > Cloudflare Pages > Edit* for account `11484df580215e96521fc542c97eb226`, and adds the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` to `leerman/green` (optionally the variable `VITE_GREEN_API_URL`); verify that `gh secret list` shows both secrets
+- [x] 3.1 The repository owner creates a Cloudflare API token scoped to *Account > Cloudflare Pages > Edit* for account `11484df580215e96521fc542c97eb226`, and adds the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` to `leerman/green` (optionally the variable `VITE_GREEN_API_URL`); verify that `gh secret list` shows both secrets
 
 ## 4. End-to-end verification
 
