@@ -61,7 +61,7 @@ With `pull_request`, GitHub withholds repository secrets from runs triggered by 
 
 ### Reading the deploy URL
 
-The deploy step sets `WRANGLER_OUTPUT_FILE_DIRECTORY` to a temporary directory. Wrangler writes ND-JSON output entries there, and a `pages-deploy-detailed` entry carries the deployment URL and the branch alias URL. A short shell step extracts them with `jq` and passes them to the comment step as step outputs. If the entry's exact field names differ in the pinned Wrangler version, the fallback is to `grep` the `https://*.green-max-chat.pages.dev` URL out of stdout. Task 3.3 verifies this against the real output.
+The deploy step sets `WRANGLER_OUTPUT_FILE_DIRECTORY` to a temporary directory. Wrangler writes ND-JSON output entries there, and a `pages-deploy-detailed` entry carries the deployment URL and the branch alias URL. A short shell step extracts them with `jq` and passes them to the comment step as step outputs. Checked against Wrangler 4.161.0 (task 1.3): the file holds one ND-JSON line with `"type":"pages-deploy-detailed"` and the fields `url` (the per-deployment URL), `alias` (the branch alias URL), `environment` (`preview` or `production`), and `deployment_trigger.metadata.commit_hash`. So the step reads `jq -r 'select(.type=="pages-deploy-detailed") | .url, .alias'`.
 
 ### PR comment via `gh`, with a hidden marker
 
