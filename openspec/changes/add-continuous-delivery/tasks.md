@@ -3,7 +3,7 @@
 ## 1. Tooling
 
 - [x] 1.1 Add `wrangler` as an exact-pinned dev dependency (`npm install -D -E wrangler@4.161.0`) and the script `"deploy": "wrangler pages deploy dist --project-name green-max-chat"` (design: Wrangler is a pinned dev dependency); verify that `npx wrangler --version` prints the pinned version from `node_modules` and that `package-lock.json` locks it
-- [ ] 1.2 Add `.nvmrc` containing `24` (design: Node version from `.nvmrc`); verify that `node -v` matches its major version locally and that `npm run build` still succeeds
+- [x] 1.2 Add `.nvmrc` containing `24` (design: Node version from `.nvmrc`); verify that `node -v` matches its major version locally and that `npm run build` still succeeds
 - [ ] 1.3 Check that the local deploy path works with the pinned version: on a scratch branch, run `npm run build && npm run deploy` and confirm Wrangler deploys a preview to the branch alias (not to Workers, and without `--force`); record the exact fields of the `pages-deploy-detailed` entry Wrangler writes when `WRANGLER_OUTPUT_FILE_DIRECTORY` is set, for use in 2.3
 
 ## 2. Workflow
